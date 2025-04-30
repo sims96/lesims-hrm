@@ -1,4 +1,4 @@
-/* 
+/*
    Feuille de styles principale - Application de Gestion des Salaires Le Sims
    Basée sur une palette de couleurs violette/magenta du logo
 */
@@ -11,7 +11,7 @@
     --accent: #e91e63;          /* Accent magenta */
     --accent-light: #ff6090;    /* Magenta clair */
     --accent-dark: #b0003a;     /* Magenta foncé */
-    
+
     /* Couleurs neutres */
     --dark: #1e1e2f;            /* Fond sombre */
     --dark-light: #2d2d42;      /* Fond sombre légèrement plus clair */
@@ -19,13 +19,13 @@
     --gray: #888;               /* Gris moyen */
     --gray-light: #ccc;         /* Gris clair */
     --light: #f8f9fa;           /* Blanc cassé */
-    
+
     /* Couleurs fonctionnelles */
     --success: #4caf50;         /* Vert pour succès */
     --info: #2196f3;            /* Bleu pour info */
     --warning: #ff9800;         /* Orange pour avertissement */
     --danger: #f44336;          /* Rouge pour danger/erreur */
-    
+
     /* Variables de mise en page */
     --sidebar-width: 260px;
     --header-height: 60px;
@@ -197,7 +197,7 @@ input, select, textarea {
 .sidebar-toggle {
     color: var(--light);
     font-size: 1.2rem;
-    display: none;
+    display: none; /* Hidden by default, shown in media query */
 }
 
 .current-month h3 {
@@ -209,12 +209,13 @@ input, select, textarea {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.5rem; /* Increased gap slightly */
 }
 
 .search-box {
     position: relative;
-    width: 300px;
+    /* Adjusted width or remove fixed width for flexibility */
+    /* width: 300px; */
 }
 
 .search-box input {
@@ -224,6 +225,7 @@ input, select, textarea {
     border-radius: 50px;
     color: var(--light);
     transition: all var(--transition-speed);
+    min-width: 200px; /* Added minimum width */
 }
 
 .search-box input::placeholder {
@@ -252,10 +254,12 @@ input, select, textarea {
     padding: 0.5rem 1rem;
     border-radius: 50px;
     font-weight: 500;
-    display: flex;
+    display: inline-flex; /* Use inline-flex for better alignment */
     align-items: center;
+    justify-content: center; /* Center content */
     gap: 0.5rem;
     transition: all var(--transition-speed);
+    white-space: nowrap; /* Prevent button text wrapping */
 }
 
 .btn i {
@@ -290,6 +294,16 @@ input, select, textarea {
     background-color: rgba(156, 39, 176, 0.1);
 }
 
+/* --- Added: Button Small Size --- */
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+}
+.btn-sm i {
+    font-size: 0.8rem;
+}
+/* --- End Button Small Size --- */
+
 /* Zone de contenu */
 .page-content {
     flex: 1;
@@ -308,6 +322,11 @@ input, select, textarea {
 
 .page-header {
     margin-bottom: 1.5rem;
+    display: flex; /* Added for alignment */
+    justify-content: space-between; /* Added for alignment */
+    align-items: center; /* Added for alignment */
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 1rem; /* Add gap between title and actions */
 }
 
 .page-header h1 {
@@ -316,10 +335,15 @@ input, select, textarea {
     color: var(--light);
 }
 
+.page-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
 /* Cartes statistiques */
-.dashboard-stats {
+.dashboard-stats, .stats-cards { /* Combined rule */
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adjusted min width */
     gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
@@ -332,6 +356,7 @@ input, select, textarea {
     align-items: center;
     box-shadow: var(--card-shadow);
     transition: transform 0.3s;
+    overflow: hidden; /* Prevent icon overflow */
 }
 
 .stat-card:hover {
@@ -339,6 +364,7 @@ input, select, textarea {
 }
 
 .stat-icon {
+    flex-shrink: 0; /* Prevent icon from shrinking */
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -355,23 +381,33 @@ input, select, textarea {
     color: white;
 }
 
+.stat-info {
+     overflow: hidden; /* Prevent text overflow */
+}
+
 .stat-info h4 {
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--gray-light);
     margin-bottom: 0.3rem;
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stat-info h2 {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--light);
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Graphiques */
 .dashboard-charts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjusted min width */
     gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
@@ -396,6 +432,25 @@ input, select, textarea {
     position: relative;
 }
 
+/* Placeholder for Charts */
+.chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--gray);
+    border: 2px dashed var(--gray-dark);
+    border-radius: var(--border-radius);
+}
+.chart-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+.chart-placeholder p {
+    font-size: 0.9rem;
+}
+
 /* Activité récente */
 .recent-activity {
     background-color: var(--dark-light);
@@ -414,6 +469,9 @@ input, select, textarea {
 .activity-list {
     max-height: 300px;
     overflow-y: auto;
+    /* Custom scrollbar (optional) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-dark) transparent;
 }
 
 .activity-item {
@@ -421,6 +479,9 @@ input, select, textarea {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
+}
+.activity-item:last-child {
+    border-bottom: none;
 }
 
 .activity-icon {
@@ -431,30 +492,35 @@ input, select, textarea {
     align-items: center;
     justify-content: center;
     margin-right: 1rem;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
-.activity-icon.add {
-    background-color: rgba(76, 175, 80, 0.2);
-    color: var(--success);
+/* Colors for different activity types */
+.activity-icon.add, .activity-icon.create, .activity-icon.import, .activity-icon.upload {
+    background-color: rgba(76, 175, 80, 0.2); color: var(--success);
 }
-
-.activity-icon.edit {
-    background-color: rgba(33, 150, 243, 0.2);
-    color: var(--info);
+.activity-icon.edit, .activity-icon.update {
+    background-color: rgba(33, 150, 243, 0.2); color: var(--info);
 }
-
-.activity-icon.delete {
-    background-color: rgba(244, 67, 54, 0.2);
-    color: var(--danger);
+.activity-icon.delete, .activity-icon.remove {
+    background-color: rgba(244, 67, 54, 0.2); color: var(--danger);
 }
+.activity-icon.login, .activity-icon.sign-in-alt {
+    background-color: rgba(156, 39, 176, 0.2); color: var(--primary);
+}
+/* Add more specific types as needed */
 
 .activity-content {
     flex: 1;
+    overflow: hidden; /* Prevent overflow */
 }
 
 .activity-title {
     font-weight: 500;
     margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .activity-time {
@@ -475,11 +541,12 @@ input, select, textarea {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6); /* Slightly darker backdrop */
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 20px; /* Add padding for smaller screens */
 }
 
 .modal-container.active {
@@ -489,31 +556,39 @@ input, select, textarea {
 .modal {
     background-color: var(--dark-light);
     border-radius: var(--border-radius);
-    width: 600px;
-    max-width: 90%;
+    width: 600px; /* Default width */
+    max-width: 95%; /* Increased max-width */
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex; /* Use flex for layout */
+    flex-direction: column; /* Stack header/body/footer */
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-    animation: modalOpen 0.3s forwards;
+    animation: modalOpen 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother animation */
+    overflow: hidden; /* Prevent content overflow before scroll */
 }
+
+/* Modal Sizes */
+.modal.modal-large { width: 800px; }
+.modal.modal-xlarge { width: 1100px; }
+
 
 @keyframes modalOpen {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: scale(0.95) translateY(-10px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1) translateY(0);
     }
 }
 
 .modal-header {
-    padding: 1.5rem;
+    padding: 1rem 1.5rem; /* Adjusted padding */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0; /* Prevent header shrinking */
 }
 
 .modal-header h3 {
@@ -534,6 +609,8 @@ input, select, textarea {
 
 .modal-body {
     padding: 1.5rem;
+    overflow-y: auto; /* Enable scroll only for body */
+    flex-grow: 1; /* Allow body to take up space */
 }
 
 .modal-footer {
@@ -542,6 +619,8 @@ input, select, textarea {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+    flex-shrink: 0; /* Prevent footer shrinking */
+    background-color: var(--dark-light); /* Ensure background matches modal */
 }
 
 /* Formulaires */
@@ -558,56 +637,166 @@ input, select, textarea {
 .form-control {
     width: 100%;
     padding: 0.8rem 1rem;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.2); /* Darker input background */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
     border-radius: var(--border-radius);
     color: var(--light);
     transition: all var(--transition-speed);
 }
 
 .form-control:focus {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.3); /* Focus outline */
 }
 
 .form-control::placeholder {
     color: var(--gray);
 }
 
+/* Input types */
+input[type="date"].form-control,
+input[type="month"].form-control,
+select.form-control {
+    appearance: none; /* Remove default styling */
+    padding-right: 2.5rem; /* Space for custom arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23cccccc' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E"); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    color-scheme: dark; /* Hint for date picker theme */
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5; /* Make default date picker arrow less prominent */
+    cursor: pointer;
+}
+
+textarea.form-control {
+    resize: vertical; /* Allow vertical resize */
+    min-height: 80px;
+}
+
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid */
+    gap: 1.5rem; /* Increased gap */
+}
+
+/* Checkbox custom style */
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.checkbox-wrapper input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  margin-right: 0.75rem;
+  position: relative;
+  transition: background-color 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+.checkbox-wrapper input[type="checkbox"]:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.checkbox-wrapper input[type="checkbox"]:checked::before {
+  content: '\\f00c'; /* FontAwesome check icon */
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  color: white;
+  font-size: 12px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.checkbox-wrapper label {
+  margin-bottom: 0; /* Reset margin */
+  font-weight: normal; /* Adjust weight if needed */
+  user-select: none; /* Prevent text selection */
 }
 
 /* Tableaux */
 .table-responsive {
     overflow-x: auto;
+    width: 100%;
 }
 
-table {
+.table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 600px; /* Ensure table has min width for responsiveness */
+    background-color: var(--dark-light); /* Table background */
+    border-radius: var(--border-radius); /* Rounded corners for table */
+    overflow: hidden; /* Clip content to rounded corners */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2); /* Subtle shadow */
 }
 
-thead th {
-    background-color: rgba(0, 0, 0, 0.2);
+.table thead th {
+    background-color: rgba(0, 0, 0, 0.3); /* Darker header */
     padding: 0.8rem 1rem;
     text-align: left;
     font-weight: 600;
     color: var(--light);
+    border-bottom: 2px solid var(--primary-dark); /* Accent border */
 }
 
-tbody td {
+.table tbody td {
     padding: 0.8rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* Subtle row separator */
+    vertical-align: middle; /* Align content vertically */
 }
 
-tbody tr:hover {
+.table tbody tr {
+    transition: background-color var(--transition-speed);
+}
+
+.table tbody tr:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
+
+.table tbody tr:last-child td {
+    border-bottom: none; /* Remove border on last row */
+}
+
+/* Employee Name/Avatar in tables */
+.employee-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom right, var(--primary), var(--accent));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.employee-fullname {
+    font-weight: 500;
+    color: var(--light);
+}
+.employee-position, .employee-id {
+    font-size: 0.8rem;
+    color: var(--gray);
+}
+
 
 .table-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center; /* Align buttons vertically */
 }
 
 .action-btn {
@@ -617,37 +806,42 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--light);
+    color: var(--gray-light); /* Default color */
+    background-color: rgba(255, 255, 255, 0.1); /* Default background */
     transition: all var(--transition-speed);
 }
-
-.action-btn.edit {
-    background-color: rgba(33, 150, 243, 0.2);
-    color: var(--info);
+.action-btn:hover {
+    transform: scale(1.1);
+}
+.action-btn i {
+     font-size: 0.9rem;
 }
 
-.action-btn.edit:hover {
-    background-color: var(--info);
-    color: white;
-}
+/* Specific button colors */
+.action-btn.view-employee, .action-btn.view-salary { color: var(--info); }
+.action-btn.view-employee:hover, .action-btn.view-salary:hover { background-color: var(--info); color: white; }
 
-.action-btn.delete {
-    background-color: rgba(244, 67, 54, 0.2);
-    color: var(--danger);
-}
+.action-btn.edit-employee, .action-btn.edit-salary, .action-btn.edit-advance, .action-btn.edit-debt, .action-btn.edit-sanction { color: var(--primary); }
+.action-btn.edit-employee:hover, .action-btn.edit-salary:hover, .action-btn.edit-advance:hover, .action-btn.edit-debt:hover, .action-btn.edit-sanction:hover { background-color: var(--primary); color: white; }
 
-.action-btn.delete:hover {
-    background-color: var(--danger);
-    color: white;
-}
+.action-btn.delete-employee, .action-btn.delete-salary, .action-btn.delete-advance, .action-btn.delete-debt, .action-btn.delete-sanction { color: var(--danger); }
+.action-btn.delete-employee:hover, .action-btn.delete-salary:hover, .action-btn.delete-advance:hover, .action-btn.delete-debt:hover, .action-btn.delete-sanction:hover { background-color: var(--danger); color: white; }
+
+.action-btn.mark-paid, .action-btn.pay-salary { color: var(--success); }
+.action-btn.mark-paid:hover, .action-btn.pay-salary:hover { background-color: var(--success); color: white; }
+
+.action-btn.print-salary { color: var(--gray-light); }
+.action-btn.print-salary:hover { background-color: var(--gray-dark); color: white; }
+
 
 /* États et badges */
 .badge {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.6rem; /* Slightly more padding */
     border-radius: 50px;
     font-size: 0.75rem;
     font-weight: 600;
+    text-transform: capitalize; /* Capitalize status text */
 }
 
 .badge-success {
@@ -669,6 +863,202 @@ tbody tr:hover {
     background-color: rgba(33, 150, 243, 0.2);
     color: var(--info);
 }
+
+/* Card component */
+.card {
+    background-color: var(--dark-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden; /* Ensure content respects border-radius */
+}
+.card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.card-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+.card-body {
+    padding: 1.5rem;
+}
+.card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0,0,0,0.1);
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.filter-group label {
+     margin-bottom: 0; /* Override default form label margin */
+     font-size: 0.9rem;
+     color: var(--gray-light);
+}
+.filters .search-box { /* Target search box inside filters */
+    flex-grow: 1; /* Allow search to take available space */
+    min-width: 200px;
+}
+.filters .search-box input {
+    background-color: rgba(0, 0, 0, 0.2); /* Darker background for filter inputs */
+     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.filters select.form-control {
+     min-width: 150px; /* Give selects a minimum width */
+     background-color: rgba(0, 0, 0, 0.2);
+     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-left: auto; /* Push actions to the right if space allows */
+}
+
+
+/* Loading Spinners */
+.loading-spinner-inline {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+    color: var(--danger);
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid var(--danger);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+/* Confirmation Details (in Modals) */
+.confirm-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: var(--border-radius);
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.detail-row:last-child {
+    border-bottom: none;
+}
+.detail-label {
+    color: var(--gray-light);
+    font-weight: 500;
+}
+.detail-value {
+    color: var(--light);
+}
+
+/* --- START: Styles for Sync/Pending indicators --- */
+#sync-status-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between indicators */
+    /* Removed margin-left to let flexbox handle spacing */
+}
+
+#pending-changes-count {
+    background-color: var(--warning); /* Orange */
+    color: var(--dark-light); /* Dark text for contrast */
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 22px; /* Slightly larger */
+    height: 22px;
+    display: none; /* Hidden by default, shown via JS */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    flex-shrink: 0; /* Prevent shrinking */
+    cursor: default; /* Indicate it's not clickable (unless you add functionality) */
+}
+
+#sync-indicator {
+    font-size: 0.8rem;
+    padding: 4px 10px; /* Adjusted padding */
+    border-radius: 15px; /* Pill shape */
+    display: none; /* Hidden by default */
+    transition: all 0.3s ease-in-out;
+    opacity: 0; /* Start hidden for transitions */
+    white-space: nowrap;
+    flex-shrink: 0; /* Prevent shrinking */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+#sync-indicator.syncing,
+#sync-indicator.synced,
+#sync-indicator.sync-error {
+    display: inline-flex; /* Use flex for icon alignment */
+    align-items: center;
+    opacity: 1; /* Make visible */
+}
+
+#sync-indicator.syncing {
+    background-color: var(--info); /* Blue */
+    color: white;
+}
+#sync-indicator.synced {
+    background-color: var(--success); /* Green */
+    color: white;
+}
+#sync-indicator.sync-error {
+    background-color: var(--danger); /* Red */
+    color: white;
+}
+#sync-indicator.idle {
+     display: none;
+     opacity: 0;
+}
+
+/* Spinner inside sync indicator */
+#sync-indicator.syncing::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+    flex-shrink: 0; /* Prevent spinner shrinking */
+}
+/* --- END: Styles for Sync/Pending indicators --- */
+
 
 /* Utilitaires */
 .text-success { color: var(--success); }
@@ -693,30 +1083,58 @@ tbody tr:hover {
     .sidebar {
         transform: translateX(-100%);
         position: fixed;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.2); /* Add shadow when overlaying */
     }
-    
+
     .sidebar.active {
         transform: translateX(0);
     }
-    
+
     .main-content {
-        margin-left: 0;
+        /* margin-left: 0; Removed - structure doesn't push content */
+        width: 100%; /* Ensure main content takes full width */
     }
-    
+
     .sidebar-toggle {
         display: block;
+    }
+
+    .header-right {
+        gap: 1rem; /* Reduce gap on smaller screens */
+    }
+
+    .actions {
+         /* Maybe hide text on smaller screens */
+        /* .btn span { display: none; } */
+        /* .btn { padding: 0.5rem; } */
     }
 }
 
 @media (max-width: 768px) {
+    :root {
+        --sidebar-width: 240px; /* Slightly smaller sidebar */
+    }
+
     .dashboard-stats,
-    .dashboard-charts {
-        grid-template-columns: 1fr;
+    .dashboard-charts,
+    .stats-cards {
+        grid-template-columns: 1fr; /* Stack cards */
     }
-    
-    .search-box {
-        width: 200px;
+
+    .search-box input {
+        min-width: 150px;
     }
+
+    .header {
+         padding: 0 1rem; /* Reduce header padding */
+    }
+
+     .page-content {
+         padding: 1rem; /* Reduce page padding */
+     }
+
+     .modal.modal-large { width: 95%; } /* Make large modals take more width */
+     .modal.modal-xlarge { width: 95%; }
 }
 
 @media (max-width: 576px) {
@@ -724,23 +1142,55 @@ tbody tr:hover {
         flex-direction: column;
         height: auto;
         padding: 1rem;
+        gap: 1rem; /* Add gap between rows */
     }
-    
+
     .header-left,
     .header-right {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .header-right {
-        margin-top: 1rem;
+        margin-top: 0; /* Remove top margin */
+        flex-wrap: wrap; /* Allow wrapping */
+        gap: 0.5rem; /* Reduce gap */
     }
-    
+
     .search-box {
-        width: 100%;
+        width: 100%; /* Full width search */
+        order: -1; /* Move search box up potentially */
+        margin-bottom: 0.5rem; /* Add spacing */
     }
-    
+     #sync-status-container {
+         order: 1; /* Ensure sync status comes after search */
+     }
+     .actions {
+          order: 2;
+     }
+
     .form-grid {
         grid-template-columns: 1fr;
     }
+
+    .modal {
+        width: calc(100% - 20px); /* Near full width on mobile */
+        max-width: none;
+        margin: 10px;
+    }
+    .modal-body { padding: 1rem; }
+    .modal-header { padding: 0.8rem 1rem; }
+    .modal-footer { padding: 0.8rem 1rem; }
+
+
+    .stat-card { padding: 1rem; }
+    .stat-icon { width: 50px; height: 50px; margin-right: 0.8rem;}
+    .stat-icon i { font-size: 1.2rem; }
+    .stat-info h2 { font-size: 1.3rem;}
+
+    .page-header h1 { font-size: 1.5rem; }
+
+    /* Ensure buttons are usable */
+     .btn { padding: 0.6rem 1rem; }
+
 }

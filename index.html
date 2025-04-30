@@ -18,7 +18,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
+        /* Existing styles */
         #pwa-install-container {
             position: fixed;
             bottom: 20px;
@@ -80,14 +82,19 @@
             position: fixed;
             top: 10px;
             right: 10px;
-            background-color: #f44336;
+            background-color: #f44336; /* Red */
             color: white;
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 15px; /* Pill shape */
             font-size: 0.8rem;
-            z-index: 1000;
-            display: none;
+            z-index: 1001; /* Ensure it's above potential banner */
+            display: none; /* Initially hidden */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        #offline-indicator i {
+            margin-right: 5px;
+        }
+
 
         /* Loader pour les opérations asynchrones */
         .app-loader {
@@ -124,6 +131,74 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* --- START: Styles for new Sync/Pending indicators --- */
+        #sync-status-container {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between indicators */
+            margin-left: 15px; /* Space from search box */
+        }
+
+        #pending-changes-count {
+            background-color: #ff9800; /* Orange */
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        #sync-indicator {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: none; /* Hidden by default */
+            transition: opacity 0.3s ease-in-out;
+        }
+        #sync-indicator.syncing {
+            background-color: #2196F3; /* Blue */
+            color: white;
+            display: inline-block;
+            opacity: 1;
+        }
+        #sync-indicator.synced {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            display: inline-block;
+            opacity: 1;
+        }
+        #sync-indicator.sync-error {
+            background-color: #f44336; /* Red */
+            color: white;
+            display: inline-block;
+            opacity: 1;
+        }
+        #sync-indicator.idle {
+             display: none;
+             opacity: 0;
+        }
+
+        /* Add spinner inside sync indicator when syncing */
+        #sync-indicator.syncing::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        /* --- END: Styles for new Sync/Pending indicators --- */
+
     </style>
 </head>
 <body>
@@ -191,6 +266,10 @@
                         <input type="text" placeholder="Rechercher un employé...">
                         <i class="fas fa-search"></i>
                     </div>
+                    <div id="sync-status-container">
+                        <span id="pending-changes-count" title="Modifications en attente de synchronisation"></span>
+                        <span id="sync-indicator" class="idle"></span>
+                    </div>
                     <div class="actions">
                         <button id="export-data" class="btn btn-outline">
                             <i class="fas fa-download"></i> Exporter
@@ -219,7 +298,6 @@
                     </div>
                     <div class="recent-activity"><h3>Activité Récente</h3><div class="activity-list" id="recent-activities"><div class="empty-message">Aucune activité récente</div></div></div>
                 </div>
-
                 <div id="employees-page" class="page"></div>
                 <div id="salaries-page" class="page"></div>
                 <div id="advances-page" class="page"></div>
@@ -233,7 +311,7 @@
 
     <div id="modal-container" class="modal-container"></div>
 
-    <div id="offline-indicator"><i class="fas fa-wifi"></i> Vous êtes hors ligne</div>
+    <div id="offline-indicator"><i class="fas fa-wifi"></i> Hors ligne</div>
 
     <div id="pwa-install-container">
         <p>Installez cette application sur votre appareil pour un accès plus rapide et hors ligne.</p>
@@ -251,13 +329,10 @@
         <div class="loader-text">Chargement en cours...</div>
     </div>
 
-    <script src="js/database-supabase.js" defer></script>
-
-    <script src="js/employees.js" defer></script>
+    <script src="js/database-supabase.js" defer></script> <script src="js/data-manager.js"></script>          <script src="js/employees.js" defer></script>
     <script src="js/salaries.js" defer></script>
     <script src="js/advances.js" defer></script>
-    <script src="js/sanctions.js" defer></script>
-    <script src="js/debts.js" defer></script>
+    <script src="js/sanctions.js" defer></script> <script src="js/debts.js" defer></script>
     <script src="js/reports.js" defer></script>
 
     <script src="js/app.js" defer></script>
@@ -269,6 +344,14 @@
                 navigator.serviceWorker.register('./service-worker.js')
                     .then(function(registration) {
                         console.log('Service Worker enregistré avec succès:', registration.scope);
+                        // --- Background Sync Check (Example) ---
+                         if ('sync' in registration) {
+                             console.log('Background Sync is supported!');
+                         } else {
+                             console.log('Background Sync is not supported.');
+                         }
+                        // --- End Background Sync Check ---
+
                         registration.addEventListener('updatefound', function() {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', function() {
@@ -281,9 +364,19 @@
                     .catch(function(error) {
                         console.error('Erreur lors de l\'enregistrement du Service Worker:', error);
                     });
-                window.addEventListener('online', updateOnlineStatus);
-                window.addEventListener('offline', updateOnlineStatus);
-                updateOnlineStatus();
+
+                // NOTE: Online/Offline event listeners are now primarily handled by DataManager
+                // This listener can potentially be removed if DataManager handles the UI update
+                // window.addEventListener('online', updateOnlineStatus);
+                // window.addEventListener('offline', updateOnlineStatus);
+                // updateOnlineStatus(); // Initial check might still be useful or handled by DataManager.init
+
+                // Let DataManager control the offline indicator if preferred
+                if (window.DataManager) {
+                     window.DataManager.updateOnlineStatusUI(); // Call DM's UI update on load
+                } else {
+                    updateOnlineStatus(); // Fallback if DM not loaded yet
+                }
             });
         }
 
@@ -325,16 +418,25 @@
                 updateBtn.addEventListener('click', () => {
                     const updateContainer = document.getElementById('update-app-container');
                     if (updateContainer) updateContainer.style.display = 'none';
-                    if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
-                    }
-                    window.location.reload();
+                    // Ask service worker to skip waiting
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                         if (reg && reg.waiting) {
+                             reg.waiting.postMessage({ action: 'skipWaiting' });
+                             // Reload after the new worker takes control
+                             reg.addEventListener('controllerchange', () => {
+                                 window.location.reload();
+                             });
+                         } else {
+                              window.location.reload(); // Reload directly if no waiting worker
+                         }
+                    });
                 });
             }
         });
 
-        // Online/Offline status update function (keep as is)
+        // Original Online/Offline status update function (may be replaced by DataManager)
         function updateOnlineStatus() {
+            console.log("updateOnlineStatus called. navigator.onLine:", navigator.onLine); // Debug log
             const offlineIndicator = document.getElementById('offline-indicator');
             if (offlineIndicator) offlineIndicator.style.display = navigator.onLine ? 'none' : 'block';
         }
@@ -358,5 +460,40 @@
             const loader = document.getElementById('app-loader');
             if (loader) loader.style.display = 'none';
         };
+
+        // --- Placeholder UI Update functions for DataManager ---
+        // Implement these fully in app.js after App initialization if preferred
+        window.updateSyncStatusUI = function(status, message = '') {
+             console.log(`Placeholder: updateSyncStatusUI(${status}, ${message})`);
+             const syncIndicator = document.getElementById('sync-indicator');
+             if (syncIndicator) {
+                 syncIndicator.textContent = message;
+                 // Remove previous status classes
+                 syncIndicator.classList.remove('syncing', 'synced', 'sync-error', 'idle');
+                 // Add current status class
+                 if (status && status !== 'idle') {
+                      syncIndicator.classList.add(status);
+                      syncIndicator.style.display = 'inline-block';
+                 } else {
+                      syncIndicator.classList.add('idle');
+                      syncIndicator.style.display = 'none';
+                 }
+             }
+        };
+
+        window.updatePendingCountUI = function() {
+            // This might be called by DataManager before App is fully ready,
+            // so check for element existence.
+            const count = window.DataManager?.pendingChanges?.length || 0;
+             console.log(`Placeholder: updatePendingCountUI(${count})`);
+             const pendingCountElement = document.getElementById('pending-changes-count');
+             if (pendingCountElement) {
+                 pendingCountElement.textContent = count > 0 ? count : '';
+                 pendingCountElement.style.display = count > 0 ? 'inline-block' : 'none';
+             }
+        };
+        // --- End Placeholder UI Functions ---
+
     </script>
-    
+</body>
+</html>
