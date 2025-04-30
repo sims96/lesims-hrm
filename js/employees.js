@@ -773,7 +773,7 @@ const EmployeesManager = {
                             <div class="employee-financial-summary card mb-4">
                                  <div class="card-header"><h3>Résumé Financier Actuel</h3></div>
                                  <div class="card-body">
-                                     <div class="stats-cards"> {/* Re-use stats-cards class */}
+                                     <div class="stats-cards"> 
                                          <div class="stat-card"><div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div><div class="stat-info"><h4>Avances Non Remb.</h4><h2>${totalUnpaidAdvances.toLocaleString()} ${currencySymbol}</h2></div></div>
                                          <div class="stat-card"><div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><h4>Sanctions (Mois)</h4><h2>${totalCurrentMonthSanctions.toLocaleString()} ${currencySymbol}</h2></div></div>
                                          <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-invoice-dollar"></i></div><div class="stat-info"><h4>Dettes Non Payées</h4><h2>${totalUnpaidDebts.toLocaleString()} ${currencySymbol}</h2></div></div>
