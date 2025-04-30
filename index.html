@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Application de gestion des salaires des employés pour Le Sims">
+    <meta name="theme-color" content="#9c27b0">
+    <title>Le Sims - Gestion des Salaires</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+
+    <link rel="stylesheet" href="css/styles.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #pwa-install-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: none;
+            background-color: #2d2d42;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            max-width: 300px;
+        }
+
+        #pwa-install-container p {
+            margin: 0 0 10px 0;
+            color: #f8f9fa;
+        }
+
+        #pwa-install-btn {
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        #pwa-install-cancel {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+        }
+
+        #update-app-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+            background-color: #2d2d42;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 15px;
+        }
+
+        #update-app-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Écran hors ligne */
+        #offline-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Loader pour les opérations asynchrones */
+        .app-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none; /* Initially hidden */
+        }
+
+        .loader-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #9c27b0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .loader-text {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="assets/logo.png" alt="Le Sims Logo">
+                </div>
+                <h2>Le Sims</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <ul>
+                    <li class="active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Tableau de bord</span>
+                    </li>
+                    <li data-page="employees">
+                        <i class="fas fa-users"></i>
+                        <span>Employés</span>
+                    </li>
+                    <li data-page="salaries">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Salaires</span>
+                    </li>
+                    <li data-page="advances">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        <span>Avances</span>
+                    </li>
+                    <li data-page="sanctions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Sanctions</span>
+                    </li>
+                    <li data-page="debts">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Dettes clients</span>
+                    </li>
+                    <li data-page="reports">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Rapports</span>
+                    </li>
+                    <li data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Paramètres</span>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <span id="current-year"></span> © Le Sims
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="current-month">
+                        <h3 id="current-date"></h3>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="Rechercher un employé...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="actions">
+                        <button id="export-data" class="btn btn-outline">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                        <button id="import-data" class="btn btn-outline">
+                            <i class="fas fa-upload"></i> Importer
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div id="page-content" class="page-content">
+                <div id="dashboard-page" class="page active">
+                    <div class="page-header">
+                        <h1>Tableau de bord</h1>
+                    </div>
+                    <div class="dashboard-stats">
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-tie"></i></div><div class="stat-info"><h4>Total Employés</h4><h2 id="total-employees">0</h2></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-money-check-alt"></i></div><div class="stat-info"><h4>Masse Salariale</h4><h2 id="total-salary">0 FCFA</h2></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div><div class="stat-info"><h4>Avances en Cours</h4><h2 id="total-advances">0 FCFA</h2></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-invoice-dollar"></i></div><div class="stat-info"><h4>Dettes Clients</h4><h2 id="total-debts">0 FCFA</h2></div></div>
+                    </div>
+                    <div class="dashboard-charts">
+                        <div class="chart-card"><h3>Répartition des Salaires</h3><div id="salary-chart" class="chart-container"></div></div>
+                        <div class="chart-card"><h3>Évolution Mensuelle</h3><div id="monthly-chart" class="chart-container"></div></div>
+                    </div>
+                    <div class="recent-activity"><h3>Activité Récente</h3><div class="activity-list" id="recent-activities"><div class="empty-message">Aucune activité récente</div></div></div>
+                </div>
+
+                <div id="employees-page" class="page"></div>
+                <div id="salaries-page" class="page"></div>
+                <div id="advances-page" class="page"></div>
+                <div id="sanctions-page" class="page"></div>
+                <div id="debts-page" class="page"></div>
+                <div id="reports-page" class="page"></div>
+                <div id="settings-page" class="page"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container" class="modal-container"></div>
+
+    <div id="offline-indicator"><i class="fas fa-wifi"></i> Vous êtes hors ligne</div>
+
+    <div id="pwa-install-container">
+        <p>Installez cette application sur votre appareil pour un accès plus rapide et hors ligne.</p>
+        <button id="pwa-install-btn">Installer</button>
+        <button id="pwa-install-cancel">Plus tard</button>
+    </div>
+
+    <div id="update-app-container">
+        <p>Une nouvelle version est disponible!</p>
+        <button id="update-app-btn">Mettre à jour</button>
+    </div>
+
+    <div class="app-loader" id="app-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Chargement en cours...</div>
+    </div>
+
+    <script src="js/database-supabase.js" defer></script>
+
+    <script src="js/employees.js" defer></script>
+    <script src="js/salaries.js" defer></script>
+    <script src="js/advances.js" defer></script>
+    <script src="js/sanctions.js" defer></script>
+    <script src="js/debts.js" defer></script>
+    <script src="js/reports.js" defer></script>
+
+    <script src="js/app.js" defer></script>
+
+    <script>
+        // Service Worker registration logic (keep as is)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function(registration) {
+                        console.log('Service Worker enregistré avec succès:', registration.scope);
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Erreur lors de l\'enregistrement du Service Worker:', error);
+                    });
+                window.addEventListener('online', updateOnlineStatus);
+                window.addEventListener('offline', updateOnlineStatus);
+                updateOnlineStatus();
+            });
+        }
+
+        // PWA installation prompt logic (keep as is)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const pwaInstallContainer = document.getElementById('pwa-install-container');
+            if (pwaInstallContainer) pwaInstallContainer.style.display = 'block';
+        });
+
+        // Event listeners for PWA buttons (keep as is)
+        document.addEventListener('DOMContentLoaded', function() {
+            const installBtn = document.getElementById('pwa-install-btn');
+            const cancelBtn = document.getElementById('pwa-install-cancel');
+            const updateBtn = document.getElementById('update-app-btn');
+
+            if (installBtn) {
+                installBtn.addEventListener('click', () => {
+                    const pwaInstallContainer = document.getElementById('pwa-install-container');
+                    if (pwaInstallContainer) pwaInstallContainer.style.display = 'none';
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        deferredPrompt.userChoice.then((choiceResult) => {
+                            console.log(choiceResult.outcome === 'accepted' ? 'User accepted install' : 'User dismissed install');
+                            deferredPrompt = null;
+                        });
+                    }
+                });
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    const pwaInstallContainer = document.getElementById('pwa-install-container');
+                    if (pwaInstallContainer) pwaInstallContainer.style.display = 'none';
+                });
+            }
+            if (updateBtn) {
+                updateBtn.addEventListener('click', () => {
+                    const updateContainer = document.getElementById('update-app-container');
+                    if (updateContainer) updateContainer.style.display = 'none';
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+                    }
+                    window.location.reload();
+                });
+            }
+        });
+
+        // Online/Offline status update function (keep as is)
+        function updateOnlineStatus() {
+            const offlineIndicator = document.getElementById('offline-indicator');
+            if (offlineIndicator) offlineIndicator.style.display = navigator.onLine ? 'none' : 'block';
+        }
+
+        // Update notification function (keep as is)
+        function showUpdateNotification() {
+            const updateContainer = document.getElementById('update-app-container');
+            if (updateContainer) updateContainer.style.display = 'block';
+        }
+
+        // Loader functions (keep as is)
+        window.showLoader = function(message = 'Chargement en cours...') {
+            const loader = document.getElementById('app-loader');
+            const loaderText = document.querySelector('.loader-text');
+            if (loader && loaderText) {
+                loaderText.textContent = message;
+                loader.style.display = 'flex';
+            }
+        };
+        window.hideLoader = function() {
+            const loader = document.getElementById('app-loader');
+            if (loader) loader.style.display = 'none';
+        };
+    </script>
+    
