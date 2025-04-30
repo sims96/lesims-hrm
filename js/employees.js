@@ -293,7 +293,7 @@ const EmployeesManager = {
                 <div class="modal">
                     <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" aria-label="Fermer"><i class="fas fa-times"></i></button></div>
                     <div class="modal-body">
-                        <form id="employee-form" novalidate> {/* Add novalidate to handle validation manually */}
+                        <form id="employee-form" novalidate>
                             <input type="hidden" id="employee-modal-id" value="${employee.id || ''}">
                             <div class="form-grid">
                                 <div class="form-group"><label for="employee-firstname">Prénom *</label><input type="text" id="employee-firstname" class="form-control" value="${employee.firstName || ''}" required></div>
@@ -742,11 +742,11 @@ const EmployeesManager = {
 
             // Construction du modal (Main Structure)
             modalContainer.innerHTML = `
-                <div class="modal modal-large"> {/* Use modal-large class */}
+                <div class="modal modal-large"> 
                     <div class="modal-header"><h3>Détails de l'Employé</h3><button class="modal-close" aria-label="Fermer"><i class="fas fa-times"></i></button></div>
                     <div class="modal-body">
                         <div class="employee-profile" data-employee-id="${employee.id}">
-                            {/* Profile Header */}
+                           
                             <div class="employee-profile-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                                 <div class="avatar" style="width: 70px; height: 70px; font-size: 1.5rem;"><span>${employee.firstName?.charAt(0) || ''}${employee.lastName?.charAt(0) || ''}</span></div>
                                 <div class="employee-profile-info">
@@ -759,7 +759,7 @@ const EmployeesManager = {
                                 </div>
                             </div>
 
-                             {/* Employee Details Grid */}
+                             
                              <div class="employee-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                                  <div class="detail-item"><strong class="detail-label" style="color:var(--gray-light);">ID Employé:</strong><span class="detail-value"> ${employee.employeeId || '-'}</span></div>
                                  <div class="detail-item"><strong class="detail-label" style="color:var(--gray-light);">Salaire Base:</strong><span class="detail-value"> ${employee.baseSalary ? `${employee.baseSalary.toLocaleString()} ${currencySymbol}` : '-'}</span></div>
@@ -769,7 +769,7 @@ const EmployeesManager = {
                              </div>
 
 
-                            {/* Financial Summary */}
+                           
                             <div class="employee-financial-summary card mb-4">
                                  <div class="card-header"><h3>Résumé Financier Actuel</h3></div>
                                  <div class="card-body">
@@ -781,13 +781,13 @@ const EmployeesManager = {
                                 </div>
                             </div>
 
-                            {/* Tabs */}
+                          
                             <div class="employee-tabs">
                                 <div class="tabs-header" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 1rem;">
                                     <div class="tab-item active" data-tab="advances" style="padding: 0.8rem 1rem; cursor: pointer; border-bottom: 2px solid transparent;">Avances (${validAdvances.length})</div>
                                     <div class="tab-item" data-tab="sanctions" style="padding: 0.8rem 1rem; cursor: pointer; border-bottom: 2px solid transparent;">Sanctions (${validSanctions.length})</div>
                                     <div class="tab-item" data-tab="debts" style="padding: 0.8rem 1rem; cursor: pointer; border-bottom: 2px solid transparent;">Dettes Clients (${validDebts.length})</div>
-                                    {/* Style active tab */}
+                                   
                                      <style>.tabs-header .tab-item.active { border-bottom-color: var(--primary); color: var(--primary); font-weight: 600; }</style>
                                 </div>
                                 <div class="tabs-content">
@@ -798,21 +798,21 @@ const EmployeesManager = {
                                         </div>
                                         ${renderDetailTable(validAdvances, 'advances')}
                                     </div>
-                                    <div class="tab-content" id="sanctions-tab" style="display: none;"> {/* Hide inactive tabs */}
+                                    <div class="tab-content" id="sanctions-tab" style="display: none;"> 
                                          <div class="tab-content-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                              <h4>Sanctions et Pénalités</h4>
                                              <button class="btn btn-outline btn-sm add-sanction" data-employee-id="${employee.id}"><i class="fas fa-plus"></i> Nouvelle Sanction</button>
                                          </div>
                                          ${renderDetailTable(validSanctions, 'sanctions')}
                                     </div>
-                                    <div class="tab-content" id="debts-tab" style="display: none;"> {/* Hide inactive tabs */}
+                                    <div class="tab-content" id="debts-tab" style="display: none;"> 
                                          <div class="tab-content-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                              <h4>Dettes Clients</h4>
                                              <button class="btn btn-outline btn-sm add-debt" data-employee-id="${employee.id}"><i class="fas fa-plus"></i> Nouvelle Dette</button>
                                          </div>
                                          ${renderDetailTable(validDebts, 'debts')}
                                     </div>
-                                    {/* Style for inactive tabs */}
+                                  
                                      <style>.tabs-content .tab-content:not(.active) { display: none; }</style>
                                 </div>
                             </div>
