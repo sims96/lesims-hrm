@@ -1,0 +1,255 @@
+/**
+ * mobile-optimizations.css
+ * Optimizations and fixes for mobile views in Le Sims application
+ * To be included after other CSS files
+ */
+
+/* ====== MOBILE MENU OVERLAY ====== */
+/* Add overlay when sidebar is active on mobile */
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 99; /* Just below sidebar z-index */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  
+  @media (max-width: 992px) {
+    /* When sidebar is active, show overlay */
+    body.sidebar-active .mobile-overlay {
+      display: block;
+      opacity: 1;
+    }
+    
+    /* Prevent scrolling of main content when sidebar is open */
+    body.sidebar-active {
+      overflow: hidden;
+    }
+    
+    /* Ensure consistent z-index stacking */
+    .sidebar {
+      z-index: 100;
+      width: 85%; /* Limit width on very small devices */
+      max-width: 300px;
+    }
+    
+    /* Improve sidebar transition */
+    .sidebar {
+      transition: transform 0.3s ease-out;
+    }
+    
+    /* Increase tap target sizes for mobile navigation */
+    .sidebar-menu ul li {
+      padding: 0.85rem 1.5rem;
+      margin: 0.3rem 0.75rem;
+    }
+    
+    /* Make sidebar toggle more tappable */
+    .sidebar-toggle {
+      padding: 8px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    
+    /* Ensure header stays above content but below sidebar */
+    .header {
+      z-index: 98;
+    }
+    
+    /* Improve dropdown positioning for mobile */
+    .dropdown-menu {
+      position: fixed;
+      width: 100%;
+      left: 0;
+      right: 0;
+      z-index: 97;
+    }
+  }
+  
+  /* ====== IMPROVED MODAL HANDLING ON MOBILE ====== */
+  @media (max-width: 576px) {
+    .modal {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      border-radius: 0;
+      height: 100%;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    /* Full screen modals on very small screens */
+    @media (max-height: 500px) {
+      .modal-container.active {
+        align-items: flex-start;
+      }
+    }
+    
+    /* Larger, more tappable form controls */
+    .form-control {
+      padding: 12px;
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Larger buttons for better touch */
+    .btn {
+      padding: 12px 16px;
+      min-height: 44px;
+    }
+    
+    /* Action buttons in tables */
+    .action-btn {
+      width: 40px;
+      height: 40px;
+    }
+  }
+  
+  /* ====== RESPONSIVE TABLE IMPROVEMENTS ====== */
+  @media (max-width: 768px) {
+    /* Optional scrollable tables for very narrow screens */
+    .table-responsive {
+      position: relative;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Visual indicator for scrollable tables */
+    .table-responsive::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(to right, rgba(45, 45, 66, 0), rgba(45, 45, 66, 0.3));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .table-responsive.scrollable::after {
+      opacity: 1;
+    }
+    
+    /* Better spacing for table cells on small screens */
+    .table tbody td {
+      padding: 12px 8px;
+    }
+    
+    /* Ensure buttons in rows have enough space */
+    .table-actions {
+      min-width: 120px;
+    }
+  }
+  
+  /* ====== TOUCH OPTIMIZATIONS ====== */
+  @media (max-width: 992px) {
+    /* Optimize all clickable elements for touch */
+    button, 
+    input[type="submit"],
+    input[type="button"],
+    .btn,
+    .action-btn,
+    .nav-link,
+    .sidebar-menu ul li,
+    .tab-item {
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(0,0,0,0); /* Remove tap highlight on mobile */
+      touch-action: manipulation; /* Optimize for touch */
+    }
+    
+    /* Add minimal touch feedback */
+    button:active, 
+    input[type="submit"]:active,
+    input[type="button"]:active,
+    .btn:active,
+    .action-btn:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+    
+    /* Improve spacing for form elements */
+    label {
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    select {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    
+    /* Remove hover effects that don't make sense on touch devices */
+    .table tbody tr:hover {
+      transform: none; /* Remove hover transform on mobile */
+    }
+    
+    /* Ensure filter dropdowns are usable */
+    .filters .filter-group select,
+    .filters .search-box input {
+      min-height: 44px;
+    }
+  }
+  
+  /* ====== PERFORMANCE OPTIMIZATIONS ====== */
+  @media (max-width: 768px) {
+    /* Disable expensive visual effects on low-end devices */
+    .table tbody tr,
+    .stat-card,
+    .card,
+    .btn {
+      will-change: auto; /* Only use GPU acceleration when needed */
+      transform: translateZ(0); /* Force hardware acceleration for important animations */
+    }
+    
+    /* Simplified backgrounds for better performance */
+    .sidebar,
+    .modal,
+    .card {
+      backdrop-filter: none; /* Disable for better performance on low-end devices */
+      -webkit-backdrop-filter: none;
+    }
+    
+    /* Ensure typography is readable */
+    body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+    h3 { font-size: 1.1rem; }
+  }
+  
+  /* ====== UTILS ====== */
+  /* JavaScript can use these classes */
+  .scroll-disabled {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+  }
+  
+  /* Hide elements that aren't useful on mobile */
+  @media (max-width: 576px) {
+    .hide-on-mobile {
+      display: none !important;
+    }
+  }
