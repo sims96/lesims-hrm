@@ -46,7 +46,7 @@ const EmployeesManager = {
         employeesPage.innerHTML = `
             <div class="page-header">
                 <h1>Gestion des Employés</h1>
-                <div class="page-actions"> {/* Added page-actions div */}
+                <div class="page-actions"> 
                     <button id="add-employee-btn" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Ajouter un Employé
                     </button>
@@ -88,7 +88,7 @@ const EmployeesManager = {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="employees-list" aria-live="polite"> {/* Add aria-live for screen readers */}
+                    <tbody id="employees-list" aria-live="polite"> 
                         <tr><td colspan="7"><div class="loading-spinner-inline"></div> Chargement...</td></tr>
                     </tbody>
                 </table>
@@ -202,8 +202,8 @@ const EmployeesManager = {
                             </div>
                         </td>
                         <td>${employee.position || '-'}</td>
-                        <td>${employee.email ? `<a href="mailto:${employee.email}">${employee.email}</a>` : '-'}</td> {/* Make email clickable */}
-                        <td>${employee.phone ? `<a href="tel:${employee.phone}">${employee.phone}</a>` : '-'}</td> {/* Make phone clickable */}
+                        <td>${employee.email ? `<a href="mailto:${employee.email}">${employee.email}</a>` : '-'}</td> 
+                        <td>${employee.phone ? `<a href="tel:${employee.phone}">${employee.phone}</a>` : '-'}</td> 
                         <td>${baseSalaryStr}</td>
                         <td>${hireDateStr}</td>
                         <td>
