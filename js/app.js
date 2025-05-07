@@ -2,7 +2,7 @@
  * app.js
  * Fichier principal de l'application
  * Application de Gestion des Salaires Le Sims
- * (Updated for DataManager integration & enhanced UI feedback & Accounting Module)
+ * (Updated for DataManager integration & enhanced UI feedback & Accounting Module & Charts)
  */
 
 const App = {
@@ -55,9 +55,11 @@ const App = {
             await this.loadDashboard(); // Load initial dashboard view (uses DataManager)
             console.log("Dashboard loaded.");
 
-            // Setup default accounting categories if needed
-            if (typeof setupDefaultAccountingData === 'function') {
-                await setupDefaultAccountingData();
+            // Setup default accounting categories if needed (assuming setupDefaultAccountingData is defined elsewhere or within AccountingManager)
+            if (typeof AccountingManager?.setupDefaultCategories === 'function') {
+                 // Check if setupDefaultAccountingData is still needed or if AccountingManager.setupDefaultCategories covers it
+                 await AccountingManager.setupDefaultCategories();
+                 console.log("Default accounting categories checked/initialized.");
             }
 
             console.log('Application initialisée (avec support hors ligne)');
@@ -319,7 +321,7 @@ const App = {
         try {
              await this.updateDashboardStats(); // Uses DataManager
              await this.loadRecentActivities(); // Uses DataManager
-             this.initDashboardCharts(); // Placeholder, sync
+             await this.initDashboardCharts(); // Now async to fetch data
              console.log("Dashboard data loaded.");
         } catch (error) {
              console.error("Error loading dashboard data:", error);
@@ -331,6 +333,10 @@ const App = {
              });
              const activitiesContainer = document.getElementById('recent-activities');
              if(activitiesContainer) activitiesContainer.innerHTML = '<div class="empty-message">Erreur chargement activités</div>';
+             const salaryChartContainer = document.getElementById('salary-chart');
+             const monthlyChartContainer = document.getElementById('monthly-chart');
+             if (salaryChartContainer) salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Erreur chargement graphique</p></div>`;
+             if (monthlyChartContainer) monthlyChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-line"></i><p>Erreur chargement graphique</p></div>`;
         }
     },
 
@@ -397,7 +403,7 @@ const App = {
                 const currentDate = new Date();
                 const currentYear = currentDate.getFullYear();
                 const currentMonth = currentDate.getMonth();
-                
+
                 // Add accounting summary stats to dashboard if we have AccountingManager
                 if (window.AccountingManager && Array.isArray(expenses) && Array.isArray(incomes)) {
                     // Filter for current month
@@ -405,29 +411,29 @@ const App = {
                         const expDate = new Date(exp.date);
                         return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
                     });
-                    
+
                     const currentMonthIncomes = incomes.filter(inc => {
                         const incDate = new Date(inc.date);
                         return incDate.getMonth() === currentMonth && incDate.getFullYear() === currentYear;
                     });
-                    
+
                     // Calculate totals
                     const totalMonthExpenses = currentMonthExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
                     const totalMonthIncomes = currentMonthIncomes.reduce((sum, inc) => sum + (inc.amount || 0), 0);
-                    
+
                     // Update dashboard if elements exist
                     const totalExpensesElement = document.getElementById('total-expenses-summary');
                     const totalIncomesElement = document.getElementById('total-incomes-summary');
                     const profitElement = document.getElementById('monthly-profit-summary');
-                    
+
                     if (totalExpensesElement) {
                         totalExpensesElement.textContent = this.formatCurrency(totalMonthExpenses, settings.locale, currencySymbol);
                     }
-                    
+
                     if (totalIncomesElement) {
                         totalIncomesElement.textContent = this.formatCurrency(totalMonthIncomes, settings.locale, currencySymbol);
                     }
-                    
+
                     if (profitElement) {
                         const profit = totalMonthIncomes - totalMonthExpenses;
                         profitElement.textContent = this.formatCurrency(profit, settings.locale, currencySymbol);
@@ -504,35 +510,220 @@ const App = {
     },
 
     /**
-     * Initialise les graphiques du tableau de bord (Enhanced to include accounting)
+     * Initialise les graphiques du tableau de bord (Enhanced to include accounting and actual charts)
      */
     initDashboardCharts: async function() {
-        const salaryChartContainer = document.getElementById('salary-chart');
-        const monthlyChartContainer = document.getElementById('monthly-chart');
-        
-        if (salaryChartContainer) {
-            salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Graphique répartition salaires</p></div>`;
-        }
-        
-        if (monthlyChartContainer) {
-            monthlyChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-line"></i><p>Graphique évolution mensuelle</p></div>`;
-        }
-        
-        // Try to load accounting data for charts if available
-        try {
-            if (window.AccountingManager && typeof window.AccountingManager.getDashboardChartData === 'function') {
-                const chartData = await window.AccountingManager.getDashboardChartData();
-                if (chartData) {
-                    // Implement chart rendering using the data
-                    // This would typically use a library like Chart.js
-                    console.log("Accounting chart data loaded for dashboard");
-                }
-            }
-        } catch (error) {
-            console.warn("Error loading accounting chart data:", error);
-            // Non-critical, placeholder remains visible
-        }
-    },
+         const salaryChartContainer = document.getElementById('salary-chart');
+         const monthlyChartContainer = document.getElementById('monthly-chart');
+
+         // Check if Chart.js is loaded and containers exist
+         if (!salaryChartContainer || !monthlyChartContainer || typeof Chart === 'undefined') {
+             console.warn("Chart containers or Chart.js library not found.");
+             if (salaryChartContainer) salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Graphique indisponible</p></div>`;
+             if (monthlyChartContainer) monthlyChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-line"></i><p>Graphique indisponible</p></div>`;
+             return;
+         }
+
+         // Clear placeholders and create canvas elements
+         salaryChartContainer.innerHTML = '<canvas id="salary-chart-canvas"></canvas>';
+         monthlyChartContainer.innerHTML = '<canvas id="monthly-chart-canvas"></canvas>';
+         const salaryCtx = document.getElementById('salary-chart-canvas')?.getContext('2d');
+         const monthlyCtx = document.getElementById('monthly-chart-canvas')?.getContext('2d');
+
+         if (!salaryCtx || !monthlyCtx) {
+             console.error("Failed to get chart canvas contexts.");
+              salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Erreur Contexte Graphique</p></div>`;
+              monthlyChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-line"></i><p>Erreur Contexte Graphique</p></div>`;
+             return;
+         }
+
+         window.showLoader('Chargement des graphiques...');
+         try {
+             // --- Salary Distribution Chart (Example: Doughnut by Position) ---
+             const employees = await DataManager.employees.getAll();
+             if (Array.isArray(employees) && employees.length > 0) {
+                 const positions = {};
+                 employees.forEach(emp => {
+                     const pos = emp.position || 'Non défini';
+                     positions[pos] = (positions[pos] || 0) + 1; // Count employees per position
+                 });
+                 const salaryLabels = Object.keys(positions);
+                 const salaryData = Object.values(positions);
+
+                 // Destroy previous chart instance if it exists
+                 if (salaryCtx.chartInstance) salaryCtx.chartInstance.destroy();
+
+                 salaryCtx.chartInstance = new Chart(salaryCtx, {
+                     type: 'doughnut',
+                     data: {
+                         labels: salaryLabels,
+                         datasets: [{
+                             label: 'Répartition par Poste',
+                             data: salaryData,
+                             backgroundColor: [ // Example colors - add more or generate dynamically
+                               'rgba(156, 39, 176, 0.7)', 'rgba(103, 58, 183, 0.7)',
+                               'rgba(63, 81, 181, 0.7)', 'rgba(33, 150, 243, 0.7)',
+                               'rgba(0, 188, 212, 0.7)','rgba(0, 150, 136, 0.7)',
+                               'rgba(76, 175, 80, 0.7)', 'rgba(255, 152, 0, 0.7)'
+                             ],
+                             borderColor: 'var(--dark-card, #2a2a3e)', // Use background color for border
+                             borderWidth: 2
+                         }]
+                     },
+                     options: {
+                          responsive: true, maintainAspectRatio: false,
+                          plugins: {
+                              legend: { position: 'bottom', labels:{color:'var(--text-secondary, #ccc)'} },
+                              tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+                           }
+                     }
+                 });
+             } else {
+                  salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Données insuffisantes</p></div>`;
+             }
+
+             // --- Monthly Evolution Chart (Example: Net Salary vs Expenses) ---
+             const monthsToShow = 6; // Number of past months to display
+             const endDate = new Date();
+             const startDate = new Date(endDate.getFullYear(), endDate.getMonth() - monthsToShow + 1, 1);
+
+             const [allSalaries, allExpenses] = await Promise.all([
+                 DataManager.salaries.getAll(), // Fetches all - could optimize if needed
+                 DataManager.expenses.getAll() // Fetches all expenses
+             ]);
+
+             const monthlyTotals = {}; // Key: YYYY-MM
+             const labels = [];
+             const monthLocale = 'fr-FR'; // Or get from settings
+
+             // Initialize months
+             for (let i = 0; i < monthsToShow; i++) {
+                const monthDate = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+                const year = monthDate.getFullYear();
+                const month = monthDate.getMonth();
+                const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+                labels.unshift(monthDate.toLocaleString(monthLocale, { month: 'short', year: '2-digit' })); // Add label e.g., "mai 25"
+                 monthlyTotals[key] = { netSalary: 0, expenses: 0 };
+             }
+
+             // Sum salaries for the relevant months
+             if(Array.isArray(allSalaries)) {
+                 allSalaries.forEach(s => {
+                     try {
+                         const paymentDate = new Date(s.paymentDate);
+                         if (!isNaN(paymentDate) && paymentDate >= startDate && paymentDate <= endDate) {
+                             const year = paymentDate.getFullYear();
+                             const month = paymentDate.getMonth();
+                             const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+                             if(monthlyTotals[key]) {
+                                monthlyTotals[key].netSalary += (s.netSalary || 0);
+                             }
+                         }
+                     } catch(e){ /* Ignore invalid dates */ }
+                 });
+             }
+              // Sum expenses for the relevant months
+             if(Array.isArray(allExpenses)) {
+                 allExpenses.forEach(e => {
+                      try {
+                         const expenseDate = new Date(e.date);
+                          if (!isNaN(expenseDate) && expenseDate >= startDate && expenseDate <= endDate) {
+                             const year = expenseDate.getFullYear();
+                             const month = expenseDate.getMonth();
+                             const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+                              if(monthlyTotals[key]) {
+                                monthlyTotals[key].expenses += (e.amount || 0);
+                              }
+                         }
+                     } catch(e){ /* Ignore invalid dates */ }
+                 });
+             }
+
+             // Prepare data arrays for the chart in the correct order (matching labels)
+             const netSalaryData = labels.map(label => {
+                 // Find the key corresponding to the label
+                 const monthDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1); // Start reference
+                 let foundKey = null;
+                 for (const key in monthlyTotals) {
+                     const [year, month] = key.split('-');
+                     monthDate.setFullYear(parseInt(year));
+                     monthDate.setMonth(parseInt(month) - 1);
+                     if (monthDate.toLocaleString(monthLocale, { month: 'short', year: '2-digit' }) === label) {
+                         foundKey = key;
+                         break;
+                     }
+                 }
+                 return foundKey ? monthlyTotals[foundKey].netSalary : 0;
+             });
+
+             const expenseData = labels.map(label => {
+                 const monthDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                 let foundKey = null;
+                 for (const key in monthlyTotals) {
+                     const [year, month] = key.split('-');
+                     monthDate.setFullYear(parseInt(year));
+                     monthDate.setMonth(parseInt(month) - 1);
+                     if (monthDate.toLocaleString(monthLocale, { month: 'short', year: '2-digit' }) === label) {
+                         foundKey = key;
+                         break;
+                     }
+                 }
+                 return foundKey ? monthlyTotals[foundKey].expenses : 0;
+             });
+
+             // Destroy previous chart instance if it exists
+             if (monthlyCtx.chartInstance) monthlyCtx.chartInstance.destroy();
+
+             monthlyCtx.chartInstance = new Chart(monthlyCtx, {
+                 type: 'line',
+                 data: {
+                     labels: labels,
+                     datasets: [
+                         {
+                             label: 'Salaires Nets Payés',
+                             data: netSalaryData,
+                             borderColor: 'rgba(75, 192, 192, 1)',
+                             backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                             fill: true, tension: 0.2 // Smoother line
+                         },
+                         {
+                              label: 'Dépenses Totales',
+                              data: expenseData,
+                              borderColor: 'rgba(255, 99, 132, 1)',
+                              backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                              fill: true, tension: 0.2
+                          }
+                     ]
+                 },
+                 options: {
+                     responsive: true, maintainAspectRatio: false,
+                     scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks:{color:'var(--text-secondary, #ccc)'},
+                            grid:{color:'rgba(255,255,255,0.1)'}
+                        },
+                        x: {
+                            ticks:{color:'var(--text-secondary, #ccc)'},
+                            grid:{color:'rgba(255,255,255,0.1)'}
+                        }
+                     },
+                     plugins: {
+                         legend: { position: 'bottom', labels:{color:'var(--text-secondary, #ccc)'} },
+                         tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+                      }
+                 }
+             });
+
+         } catch (error) {
+             console.error("Error initializing dashboard charts:", error);
+             salaryChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Erreur chargement graphique</p></div>`;
+             monthlyChartContainer.innerHTML = `<div class="chart-placeholder"><i class="fas fa-chart-line"></i><p>Erreur chargement graphique</p></div>`;
+         } finally {
+              window.hideLoader();
+         }
+     },
+
 
     /**
      * Charge la page des paramètres (Using DataManager)
@@ -576,8 +767,7 @@ const App = {
                          <div class="mt-4 mt-md-0"><h4>Réinitialiser Données Locales</h4><p class="text-danger">Supprime TOUTES les données locales.</p><button id="reset-local-data-btn" class="btn btn-danger"><i class="fas fa-trash"></i> Réinitialiser</button></div>
                      </div></div>
                  </div>
-                 
-                 <!-- Accounting Settings Section -->
+
                  <div class="card mb-4">
                      <div class="card-header"><h3>Paramètres Comptabilité</h3></div>
                      <div class="card-body">
@@ -645,35 +835,38 @@ const App = {
         const manageIncomeCategoriesBtn = document.getElementById('manage-income-categories-btn');
         const initAccountingDataBtn = document.getElementById('init-accounting-data-btn');
 
-        if (manageExpenseCategoriesBtn && window.AccountingManager) {
+        // Ensure AccountingManager and its function exist before adding listener
+        if (manageExpenseCategoriesBtn && window.AccountingManager && typeof window.AccountingManager.showCategoriesModal === 'function') {
             manageExpenseCategoriesBtn.addEventListener('click', () => {
-                if (typeof window.AccountingManager.showCategoriesModal === 'function') {
-                    window.AccountingManager.showCategoriesModal('expense');
-                } else {
-                    alert("Cette fonctionnalité n'est pas encore disponible.");
-                }
+                window.AccountingManager.showCategoriesModal('expense');
             });
+        } else if(manageExpenseCategoriesBtn) {
+             manageExpenseCategoriesBtn.addEventListener('click', () => alert("Fonctionnalité non disponible (AccountingManager manquant)."));
         }
 
-        if (manageIncomeCategoriesBtn && window.AccountingManager) {
+        if (manageIncomeCategoriesBtn && window.AccountingManager && typeof window.AccountingManager.showCategoriesModal === 'function') {
             manageIncomeCategoriesBtn.addEventListener('click', () => {
-                if (typeof window.AccountingManager.showCategoriesModal === 'function') {
-                    window.AccountingManager.showCategoriesModal('income');
-                } else {
-                    alert("Cette fonctionnalité n'est pas encore disponible.");
-                }
+                window.AccountingManager.showCategoriesModal('income');
             });
+        } else if (manageIncomeCategoriesBtn) {
+             manageIncomeCategoriesBtn.addEventListener('click', () => alert("Fonctionnalité non disponible (AccountingManager manquant)."));
         }
 
-        if (initAccountingDataBtn && typeof setupDefaultAccountingData === 'function') {
+        // Use AccountingManager's setup function if available
+        if (initAccountingDataBtn && window.AccountingManager && typeof window.AccountingManager.setupDefaultCategories === 'function') {
             initAccountingDataBtn.addEventListener('click', async () => {
                 try {
                     window.showLoader("Initialisation des catégories comptables...");
-                    const result = await setupDefaultAccountingData();
+                    // Call the setup function within AccountingManager
+                    const result = await window.AccountingManager.setupDefaultCategories();
                     window.hideLoader();
-                    
+
                     if (result.success) {
-                        alert(`Catégories créées: ${result.createdExpenseCategories} dépenses, ${result.createdIncomeCategories} revenus.`);
+                         if (result.createdExpenseCategories > 0 || result.createdIncomeCategories > 0) {
+                             alert(`Catégories par défaut créées/vérifiées: ${result.createdExpenseCategories} dépenses, ${result.createdIncomeCategories} revenus.`);
+                         } else {
+                             alert("Les catégories par défaut existent déjà.");
+                         }
                     } else {
                         alert(`Erreur lors de l'initialisation: ${result.error}`);
                     }
@@ -682,7 +875,9 @@ const App = {
                     alert(`Erreur: ${error.message}`);
                 }
             });
-        }
+         } else if (initAccountingDataBtn) {
+              initAccountingDataBtn.addEventListener('click', () => alert("Fonctionnalité non disponible (AccountingManager manquant)."));
+         }
     },
 
     /**
@@ -1009,20 +1204,24 @@ const App = {
             });
         }
 
-         // Header action buttons (Import/Export are now in settings)
-         // Remove listeners for header buttons if they are removed from HTML
-         /*
+         // --- Header Action Buttons ---
+         // Updated: Point Export/Import to settings page if clicked from header
          const exportDataBtn = document.getElementById('export-data'); // In header
          const importDataBtn = document.getElementById('import-data'); // In header
-         if(exportDataBtn) exportDataBtn.addEventListener('click', () => {
-             document.querySelector('.sidebar-menu li[data-page="settings"]')?.click();
-             setTimeout(() => document.getElementById('export-data-btn')?.click(), 200); // Trigger export on settings page
-         });
-         if(importDataBtn) importDataBtn.addEventListener('click', () => {
-              document.querySelector('.sidebar-menu li[data-page="settings"]')?.click();
-               setTimeout(() => document.getElementById('import-data-trigger')?.click(), 200); // Trigger import on settings page
-         });
-         */
+
+         if(exportDataBtn) {
+             exportDataBtn.addEventListener('click', () => {
+                 document.querySelector('.sidebar-menu li[data-page="settings"]')?.click();
+                 // Add a small delay to allow page navigation before triggering the settings button
+                 setTimeout(() => document.getElementById('export-data-btn')?.click(), 300);
+             });
+         }
+         if(importDataBtn) {
+             importDataBtn.addEventListener('click', () => {
+                  document.querySelector('.sidebar-menu li[data-page="settings"]')?.click();
+                  setTimeout(() => document.getElementById('import-data-trigger')?.click(), 300);
+             });
+         }
 
 
          // Window resize listener for sidebar (keep as is)
@@ -1092,10 +1291,10 @@ const App = {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
             }).format(amount);
-    
+
             // Replace the code 'XAF' with the desired display symbol 'FCFA'
             return formattedAmount.replace('XAF', displaySymbol);
-    
+
         } catch (e) {
             console.error("Currency formatting error:", e);
             // Fallback uses the display symbol directly if formatting fails
@@ -1105,82 +1304,6 @@ const App = {
 
 }; // End of App Object
 
-// Setup for accounting default data creation
-async function setupDefaultAccountingData() {
-    console.log("Checking for existing accounting categories...");
-    
-    try {
-        // Check if categories already exist
-        const expenseCategories = await DataManager.expenseCategories.getAll();
-        const incomeCategories = await DataManager.incomeCategories.getAll();
-        
-        let createdExpenseCategories = 0;
-        let createdIncomeCategories = 0;
-        
-        // Create default expense categories if none exist
-        if (!expenseCategories || expenseCategories.length === 0) {
-            console.log("No expense categories found. Creating defaults...");
-            
-            const defaultExpenseCategories = [
-                { name: 'Salaires' },
-                { name: 'Loyer' },
-                { name: 'Services Publics' },
-                { name: 'Fournitures' },
-                { name: 'Équipement' },
-                { name: 'Maintenance' },
-                { name: 'Marketing' },
-                { name: 'Transport' },
-                { name: 'Nourriture' },
-                { name: 'Taxes' },
-                { name: 'Assurance' },
-                { name: 'Autres' }
-            ];
-            
-            for (const category of defaultExpenseCategories) {
-                await DataManager.expenseCategories.save(category);
-                createdExpenseCategories++;
-            }
-            
-            console.log(`Created ${createdExpenseCategories} default expense categories.`);
-        } else {
-            console.log(`Found ${expenseCategories.length} existing expense categories.`);
-        }
-        
-        // Create default income categories if none exist
-        if (!incomeCategories || incomeCategories.length === 0) {
-            console.log("No income categories found. Creating defaults...");
-            
-            const defaultIncomeCategories = [
-                { name: 'Ventes' },
-                { name: 'Services' },
-                { name: 'Remboursements' },
-                { name: 'Investissements' },
-                { name: 'Autres' }
-            ];
-            
-            for (const category of defaultIncomeCategories) {
-                await DataManager.incomeCategories.save(category);
-                createdIncomeCategories++;
-            }
-            
-            console.log(`Created ${createdIncomeCategories} default income categories.`);
-        } else {
-            console.log(`Found ${incomeCategories.length} existing income categories.`);
-        }
-        
-        return {
-            success: true,
-            createdExpenseCategories,
-            createdIncomeCategories
-        };
-    } catch (error) {
-        console.error("Error setting up default accounting data:", error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
 
 // Initialisation de l'application au chargement du DOM
 document.addEventListener('DOMContentLoaded', async function() {
