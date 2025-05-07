@@ -327,6 +327,666 @@ const DB = {
          },
     },
 
+    // --- Expenses ---
+    expenses: {
+        getAll: async function() {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('expenses')
+                    .select(`
+                        *,
+                        expense_categories(name)
+                    `)
+                    .order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, "expenses.getAll");
+                
+                // Transform data to match the expected format in the app
+                const transformedData = (data || []).map(expense => ({
+                    id: expense.id,
+                    date: expense.date,
+                    description: expense.description,
+                    amount: parseFloat(expense.amount),
+                    categoryId: expense.category_id,
+                    categoryName: expense.expense_categories?.name,
+                    departmentId: expense.department_id,
+                    isGeneral: expense.is_general,
+                    notes: expense.notes,
+                    createdAt: expense.created_at,
+                    updatedAt: expense.updated_at
+                }));
+                
+                return transformedData;
+            } catch (error) {
+                return handleSupabaseError(error, "expenses.getAll");
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                const { data, error } = await client.from('expenses')
+                    .select(`
+                        *,
+                        expense_categories(name)
+                    `)
+                    .eq('id', id)
+                    .single();
+                
+                if (error) {
+                    if (error.code === 'PGRST116') return null;
+                    return handleSupabaseError(error, `expenses.getById(${id})`);
+                }
+                
+                // Transform data
+                return {
+                    id: data.id,
+                    date: data.date,
+                    description: data.description,
+                    amount: parseFloat(data.amount),
+                    categoryId: data.category_id,
+                    categoryName: data.expense_categories?.name,
+                    departmentId: data.department_id,
+                    isGeneral: data.is_general,
+                    notes: data.notes,
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at
+                };
+            } catch (error) {
+                return handleSupabaseError(error, `expenses.getById(${id})`);
+            }
+        },
+        
+        getByMonth: async function(year, month) {
+            try {
+                const client = await DB._ensureInitialized();
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+                
+                const { data, error } = await client.from('expenses')
+                    .select(`
+                        *,
+                        expense_categories(name)
+                    `)
+                    .gte('date', startDate.toISOString())
+                    .lte('date', endDate.toISOString())
+                    .order('date', { ascending: false });
+                    
+                if (error) return handleSupabaseError(error, `expenses.getByMonth(${year}-${month})`);
+                
+                // Transform data
+                return (data || []).map(expense => ({
+                    id: expense.id,
+                    date: expense.date,
+                    description: expense.description,
+                    amount: parseFloat(expense.amount),
+                    categoryId: expense.category_id,
+                    categoryName: expense.expense_categories?.name,
+                    departmentId: expense.department_id,
+                    isGeneral: expense.is_general,
+                    notes: expense.notes,
+                    createdAt: expense.created_at,
+                    updatedAt: expense.updated_at
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, `expenses.getByMonth(${year}-${month})`);
+            }
+        },
+        
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('expenses')
+                    .select(`
+                        *,
+                        expense_categories(name)
+                    `)
+                    .gte('date', new Date(startDate).toISOString())
+                    .lte('date', new Date(endDate).toISOString())
+                    .order('date', { ascending: false });
+                    
+                if (error) return handleSupabaseError(error, `expenses.getByDateRange`);
+                
+                // Transform data
+                return (data || []).map(expense => ({
+                    id: expense.id,
+                    date: expense.date,
+                    description: expense.description,
+                    amount: parseFloat(expense.amount),
+                    categoryId: expense.category_id,
+                    categoryName: expense.expense_categories?.name,
+                    departmentId: expense.department_id,
+                    isGeneral: expense.is_general,
+                    notes: expense.notes,
+                    createdAt: expense.created_at,
+                    updatedAt: expense.updated_at
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, `expenses.getByDateRange`);
+            }
+        },
+        
+        save: async function(expenseData) {
+            try {
+                const client = await DB._ensureInitialized();
+                
+                // Transform data to snake_case for Supabase
+                const dataToSave = {
+                    description: expenseData.description,
+                    amount: expenseData.amount,
+                    category_id: expenseData.categoryId,
+                    department_id: expenseData.departmentId,
+                    is_general: expenseData.isGeneral || false,
+                    notes: expenseData.notes || null,
+                    date: expenseData.date
+                };
+                
+                let resultData, error;
+                
+                if (expenseData.id) {
+                    // Update existing expense
+                    const response = await client.from('expenses')
+                        .update(dataToSave)
+                        .eq('id', expenseData.id)
+                        .select(`
+                            *,
+                            expense_categories(name)
+                        `)
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, `expenses.update(${expenseData.id})`);
+                } else {
+                    // Create new expense
+                    const response = await client.from('expenses')
+                        .insert(dataToSave)
+                        .select(`
+                            *,
+                            expense_categories(name)
+                        `)
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, "expenses.insert");
+                }
+                
+                // Transform data for return
+                return {
+                    id: resultData.id,
+                    date: resultData.date,
+                    description: resultData.description,
+                    amount: parseFloat(resultData.amount),
+                    categoryId: resultData.category_id,
+                    categoryName: resultData.expense_categories?.name,
+                    departmentId: resultData.department_id,
+                    isGeneral: resultData.is_general,
+                    notes: resultData.notes,
+                    createdAt: resultData.created_at,
+                    updatedAt: resultData.updated_at
+                };
+            } catch (error) {
+                return handleSupabaseError(error, "expenses.save");
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return false;
+                
+                const { error } = await client.from('expenses').delete().eq('id', id);
+                
+                if (error) {
+                    handleSupabaseError(error, `expenses.delete(${id})`);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                handleSupabaseError(error, `expenses.delete(${id})`);
+                return false;
+            }
+        }
+    },
+
+    // --- Incomes ---
+    incomes: {
+        getAll: async function() {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('incomes')
+                    .select(`
+                        *,
+                        income_categories(name)
+                    `)
+                    .order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, "incomes.getAll");
+                
+                // Transform data to match the expected format in the app
+                const transformedData = (data || []).map(income => ({
+                    id: income.id,
+                    date: income.date,
+                    description: income.description,
+                    amount: parseFloat(income.amount),
+                    categoryId: income.category_id,
+                    categoryName: income.income_categories?.name,
+                    departmentId: income.department_id,
+                    notes: income.notes,
+                    createdAt: income.created_at,
+                    updatedAt: income.updated_at
+                }));
+                
+                return transformedData;
+            } catch (error) {
+                return handleSupabaseError(error, "incomes.getAll");
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                const { data, error } = await client.from('incomes')
+                    .select(`
+                        *,
+                        income_categories(name)
+                    `)
+                    .eq('id', id)
+                    .single();
+                
+                if (error) {
+                    if (error.code === 'PGRST116') return null;
+                    return handleSupabaseError(error, `incomes.getById(${id})`);
+                }
+                
+                // Transform data
+                return {
+                    id: data.id,
+                    date: data.date,
+                    description: data.description,
+                    amount: parseFloat(data.amount),
+                    categoryId: data.category_id,
+                    categoryName: data.income_categories?.name,
+                    departmentId: data.department_id,
+                    notes: data.notes,
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at
+                };
+            } catch (error) {
+                return handleSupabaseError(error, `incomes.getById(${id})`);
+            }
+        },
+        
+        getByMonth: async function(year, month) {
+            try {
+                const client = await DB._ensureInitialized();
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+                
+                const { data, error } = await client.from('incomes')
+                    .select(`
+                        *,
+                        income_categories(name)
+                    `)
+                    .gte('date', startDate.toISOString())
+                    .lte('date', endDate.toISOString())
+                    .order('date', { ascending: false });
+                    
+                if (error) return handleSupabaseError(error, `incomes.getByMonth(${year}-${month})`);
+                
+                // Transform data
+                return (data || []).map(income => ({
+                    id: income.id,
+                    date: income.date,
+                    description: income.description,
+                    amount: parseFloat(income.amount),
+                    categoryId: income.category_id,
+                    categoryName: income.income_categories?.name,
+                    departmentId: income.department_id,
+                    notes: income.notes,
+                    createdAt: income.created_at,
+                    updatedAt: income.updated_at
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, `incomes.getByMonth(${year}-${month})`);
+            }
+        },
+        
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('incomes')
+                    .select(`
+                        *,
+                        income_categories(name)
+                    `)
+                    .gte('date', new Date(startDate).toISOString())
+                    .lte('date', new Date(endDate).toISOString())
+                    .order('date', { ascending: false });
+                    
+                if (error) return handleSupabaseError(error, `incomes.getByDateRange`);
+                
+                // Transform data
+                return (data || []).map(income => ({
+                    id: income.id,
+                    date: income.date,
+                    description: income.description,
+                    amount: parseFloat(income.amount),
+                    categoryId: income.category_id,
+                    categoryName: income.income_categories?.name,
+                    departmentId: income.department_id,
+                    notes: income.notes,
+                    createdAt: income.created_at,
+                    updatedAt: income.updated_at
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, `incomes.getByDateRange`);
+            }
+        },
+        
+        save: async function(incomeData) {
+            try {
+                const client = await DB._ensureInitialized();
+                
+                // Transform data to snake_case for Supabase
+                const dataToSave = {
+                    description: incomeData.description,
+                    amount: incomeData.amount,
+                    category_id: incomeData.categoryId,
+                    department_id: incomeData.departmentId,
+                    notes: incomeData.notes || null,
+                    date: incomeData.date
+                };
+                
+                let resultData, error;
+                
+                if (incomeData.id) {
+                    // Update existing income
+                    const response = await client.from('incomes')
+                        .update(dataToSave)
+                        .eq('id', incomeData.id)
+                        .select(`
+                            *,
+                            income_categories(name)
+                        `)
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, `incomes.update(${incomeData.id})`);
+                } else {
+                    // Create new income
+                    const response = await client.from('incomes')
+                        .insert(dataToSave)
+                        .select(`
+                            *,
+                            income_categories(name)
+                        `)
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, "incomes.insert");
+                }
+                
+                // Transform data for return
+                return {
+                    id: resultData.id,
+                    date: resultData.date,
+                    description: resultData.description,
+                    amount: parseFloat(resultData.amount),
+                    categoryId: resultData.category_id,
+                    categoryName: resultData.income_categories?.name,
+                    departmentId: resultData.department_id,
+                    notes: resultData.notes,
+                    createdAt: resultData.created_at,
+                    updatedAt: resultData.updated_at
+                };
+            } catch (error) {
+                return handleSupabaseError(error, "incomes.save");
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return false;
+                
+                const { error } = await client.from('incomes').delete().eq('id', id);
+                
+                if (error) {
+                    handleSupabaseError(error, `incomes.delete(${id})`);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                handleSupabaseError(error, `incomes.delete(${id})`);
+                return false;
+            }
+        }
+    },
+
+    // --- Expense Categories ---
+    expenseCategories: {
+        getAll: async function() {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('expense_categories')
+                    .select('*')
+                    .order('name');
+                    
+                if (error) return handleSupabaseError(error, "expenseCategories.getAll");
+                
+                // Transform data
+                return (data || []).map(category => ({
+                    id: category.id,
+                    name: category.name
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, "expenseCategories.getAll");
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                
+                const { data, error } = await client.from('expense_categories')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                    
+                if (error) {
+                    if (error.code === 'PGRST116') return null;
+                    return handleSupabaseError(error, `expenseCategories.getById(${id})`);
+                }
+                
+                return {
+                    id: data.id,
+                    name: data.name
+                };
+            } catch (error) {
+                return handleSupabaseError(error, `expenseCategories.getById(${id})`);
+            }
+        },
+        
+        save: async function(categoryData) {
+            try {
+                const client = await DB._ensureInitialized();
+                
+                const dataToSave = {
+                    name: categoryData.name
+                };
+                
+                let resultData, error;
+                
+                if (categoryData.id) {
+                    // Update existing category
+                    const response = await client.from('expense_categories')
+                        .update(dataToSave)
+                        .eq('id', categoryData.id)
+                        .select()
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, `expenseCategories.update(${categoryData.id})`);
+                } else {
+                    // Create new category
+                    const response = await client.from('expense_categories')
+                        .insert(dataToSave)
+                        .select()
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, "expenseCategories.insert");
+                }
+                
+                return {
+                    id: resultData.id,
+                    name: resultData.name
+                };
+            } catch (error) {
+                return handleSupabaseError(error, "expenseCategories.save");
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return false;
+                
+                const { error } = await client.from('expense_categories').delete().eq('id', id);
+                
+                if (error) {
+                    handleSupabaseError(error, `expenseCategories.delete(${id})`);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                handleSupabaseError(error, `expenseCategories.delete(${id})`);
+                return false;
+            }
+        }
+    },
+
+    // --- Income Categories ---
+    incomeCategories: {
+        getAll: async function() {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('income_categories')
+                    .select('*')
+                    .order('name');
+                    
+                if (error) return handleSupabaseError(error, "incomeCategories.getAll");
+                
+                // Transform data
+                return (data || []).map(category => ({
+                    id: category.id,
+                    name: category.name
+                }));
+            } catch (error) {
+                return handleSupabaseError(error, "incomeCategories.getAll");
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                
+                const { data, error } = await client.from('income_categories')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                    
+                if (error) {
+                    if (error.code === 'PGRST116') return null;
+                    return handleSupabaseError(error, `incomeCategories.getById(${id})`);
+                }
+                
+                return {
+                    id: data.id,
+                    name: data.name
+                };
+            } catch (error) {
+                return handleSupabaseError(error, `incomeCategories.getById(${id})`);
+            }
+        },
+        
+        save: async function(categoryData) {
+            try {
+                const client = await DB._ensureInitialized();
+                
+                const dataToSave = {
+                    name: categoryData.name
+                };
+                
+                let resultData, error;
+                
+                if (categoryData.id) {
+                    // Update existing category
+                    const response = await client.from('income_categories')
+                        .update(dataToSave)
+                        .eq('id', categoryData.id)
+                        .select()
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, `incomeCategories.update(${categoryData.id})`);
+                } else {
+                    // Create new category
+                    const response = await client.from('income_categories')
+                        .insert(dataToSave)
+                        .select()
+                        .single();
+                        
+                    resultData = response.data;
+                    error = response.error;
+                    
+                    if (error) return handleSupabaseError(error, "incomeCategories.insert");
+                }
+                
+                return {
+                    id: resultData.id,
+                    name: resultData.name
+                };
+            } catch (error) {
+                return handleSupabaseError(error, "incomeCategories.save");
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return false;
+                
+                const { error } = await client.from('income_categories').delete().eq('id', id);
+                
+                if (error) {
+                    handleSupabaseError(error, `incomeCategories.delete(${id})`);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                handleSupabaseError(error, `incomeCategories.delete(${id})`);
+                return false;
+            }
+        }
+    },
+
     // --- Export/Import/Reset Placeholders ---
     export: async function() { console.warn("DB.export() NYI"); alert("Export NYI"); return null; },
     import: async function(jsonData) { console.warn("DB.import() NYI"); alert("Import NYI"); return false; },

@@ -2,6 +2,7 @@
  * database-indexeddb.js
  * Gestion du stockage des données avec IndexedDB
  * Application de Gestion des Salaires Le Sims
+ * (Updated with Accounting Module support)
  */
 
 const DB = {
@@ -9,7 +10,7 @@ const DB = {
      * Nom et version de la base de données
      */
     DB_NAME: 'LeSims_SalaryManager',
-    DB_VERSION: 1,
+    DB_VERSION: 2, // Incremented version for new accounting stores
     
     /**
      * Objets de stockage (object stores)
@@ -22,6 +23,11 @@ const DB = {
         DEBTS: 'debts',
         ACTIVITIES: 'activities',
         SETTINGS: 'settings',
+        // New stores for accounting module
+        EXPENSES: 'expenses',
+        INCOMES: 'incomes',
+        EXPENSE_CATEGORIES: 'expenseCategories',
+        INCOME_CATEGORIES: 'incomeCategories',
     },
     
     /**
@@ -52,6 +58,9 @@ const DB = {
             // Gérer la création/mise à jour de la structure de la base de données
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
+                const oldVersion = event.oldVersion;
+                
+                console.log(`Upgrading IndexedDB from version ${oldVersion} to ${this.DB_VERSION}`);
                 
                 // Créer les object stores s'ils n'existent pas
                 if (!db.objectStoreNames.contains(this.STORES.EMPLOYEES)) {
@@ -96,6 +105,30 @@ const DB = {
                 
                 if (!db.objectStoreNames.contains(this.STORES.SETTINGS)) {
                     db.createObjectStore(this.STORES.SETTINGS, { keyPath: 'id' });
+                }
+                
+                // New object stores for accounting module
+                if (!db.objectStoreNames.contains(this.STORES.EXPENSES)) {
+                    const expensesStore = db.createObjectStore(this.STORES.EXPENSES, { keyPath: 'id' });
+                    expensesStore.createIndex('by_date', 'date', { unique: false });
+                    expensesStore.createIndex('by_categoryId', 'categoryId', { unique: false });
+                    expensesStore.createIndex('by_departmentId', 'departmentId', { unique: false });
+                    expensesStore.createIndex('by_isGeneral', 'isGeneral', { unique: false });
+                }
+                
+                if (!db.objectStoreNames.contains(this.STORES.INCOMES)) {
+                    const incomesStore = db.createObjectStore(this.STORES.INCOMES, { keyPath: 'id' });
+                    incomesStore.createIndex('by_date', 'date', { unique: false });
+                    incomesStore.createIndex('by_categoryId', 'categoryId', { unique: false });
+                    incomesStore.createIndex('by_departmentId', 'departmentId', { unique: false });
+                }
+                
+                if (!db.objectStoreNames.contains(this.STORES.EXPENSE_CATEGORIES)) {
+                    db.createObjectStore(this.STORES.EXPENSE_CATEGORIES, { keyPath: 'id' });
+                }
+                
+                if (!db.objectStoreNames.contains(this.STORES.INCOME_CATEGORIES)) {
+                    db.createObjectStore(this.STORES.INCOME_CATEGORIES, { keyPath: 'id' });
                 }
             };
             
@@ -884,6 +917,512 @@ const DB = {
     },
     
     /**
+     * Méthodes CRUD pour les dépenses (module comptabilité)
+     */
+    expenses: {
+        getAll: async function() {
+            try {
+                return await DB.read(DB.STORES.EXPENSES, 'getAll') || [];
+            } catch (error) {
+                console.error('Erreur lors de la récupération des dépenses:', error);
+                return [];
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                return await DB.read(DB.STORES.EXPENSES, 'get', id) || null;
+            } catch (error) {
+                console.error(`Erreur lors de la récupération de la dépense ${id}:`, error);
+                return null;
+            }
+        },
+        
+        getByMonth: async function(year, month) {
+            try {
+                const startDate = new Date(year, month, 1).toISOString();
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString(); // Dernier jour du mois
+                
+                // Récupérer toutes les dépenses et filtrer par date
+                const expenses = await this.getAll();
+                return expenses.filter(expense => {
+                    const expenseDate = new Date(expense.date).toISOString();
+                    return expenseDate >= startDate && expenseDate <= endDate;
+                });
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des dépenses pour ${month}/${year}:`, error);
+                return [];
+            }
+        },
+        
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const start = new Date(startDate).toISOString();
+                const end = new Date(endDate).toISOString();
+                
+                // Récupérer toutes les dépenses et filtrer par date
+                const expenses = await this.getAll();
+                return expenses.filter(expense => {
+                    const expenseDate = new Date(expense.date).toISOString();
+                    return expenseDate >= start && expenseDate <= end;
+                });
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des dépenses par plage de dates:`, error);
+                return [];
+            }
+        },
+        
+        getByCategory: async function(categoryId) {
+            try {
+                // Récupérer toutes les dépenses et filtrer par catégorie
+                const expenses = await this.getAll();
+                return expenses.filter(expense => expense.categoryId === categoryId);
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des dépenses par catégorie:`, error);
+                return [];
+            }
+        },
+        
+        getByDepartment: async function(departmentId) {
+            try {
+                // Récupérer toutes les dépenses et filtrer par département
+                const expenses = await this.getAll();
+                return expenses.filter(expense => expense.departmentId === departmentId);
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des dépenses par département:`, error);
+                return [];
+            }
+        },
+        
+        save: async function(expense) {
+            try {
+                // Get category name for display purposes
+                let categoryName = '';
+                if (expense.categoryId) {
+                    const category = await DB.expenseCategories.getById(expense.categoryId);
+                    if (category) {
+                        categoryName = category.name;
+                    }
+                }
+                
+                // Get department name based on departmentId
+                let departmentName = '';
+                if (expense.departmentId === 'general') {
+                    departmentName = 'Général/Admin';
+                } else {
+                    // You might want to implement a proper department lookup here
+                    // For now, we're using a simple mapping
+                    const departmentMapping = {
+                        'shawarma': 'Shawarma',
+                        'ice-cream': 'Crème Glacée',
+                        'pizza': 'Pizza',
+                        'kitchen': 'Cuisine',
+                        'bar': 'Bar',
+                        'billard': 'Billard',
+                        'chicha': 'Chicha',
+                        'general': 'Général/Admin'
+                    };
+                    departmentName = departmentMapping[expense.departmentId] || expense.departmentId;
+                }
+                
+                // Génération d'un nouvel ID si la dépense est nouvelle
+                if (!expense.id) {
+                    expense.id = Date.now().toString();
+                    expense.createdAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'add',
+                        entity: 'expense',
+                        entityId: expense.id,
+                        description: `Dépense de ${expense.amount} FCFA ajoutée: ${expense.description} (${categoryName})`
+                    });
+                } else {
+                    // Mise à jour d'une dépense existante
+                    expense.updatedAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'edit',
+                        entity: 'expense',
+                        entityId: expense.id,
+                        description: `Dépense modifiée: ${expense.description} (${categoryName})`
+                    });
+                }
+                
+                // Store category name and department name for easier access
+                expense.categoryName = categoryName;
+                expense.departmentName = departmentName;
+                
+                await DB.write(DB.STORES.EXPENSES, 'put', expense);
+                return expense;
+            } catch (error) {
+                console.error(`Erreur lors de l'enregistrement de la dépense:`, error);
+                return null;
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const expenseToDelete = await this.getById(id);
+                
+                if (!expenseToDelete) return false;
+                
+                // Log activity
+                await DB.activities.add({
+                    type: 'delete',
+                    entity: 'expense',
+                    entityId: id,
+                    description: `Dépense supprimée: ${expenseToDelete.description} (${expenseToDelete.amount} FCFA)`
+                });
+                
+                await DB.write(DB.STORES.EXPENSES, 'delete', id);
+                return true;
+            } catch (error) {
+                console.error(`Erreur lors de la suppression de la dépense ${id}:`, error);
+                return false;
+            }
+        }
+    },
+    
+    /**
+     * Méthodes CRUD pour les revenus (module comptabilité)
+     */
+    incomes: {
+        getAll: async function() {
+            try {
+                return await DB.read(DB.STORES.INCOMES, 'getAll') || [];
+            } catch (error) {
+                console.error('Erreur lors de la récupération des revenus:', error);
+                return [];
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                return await DB.read(DB.STORES.INCOMES, 'get', id) || null;
+            } catch (error) {
+                console.error(`Erreur lors de la récupération du revenu ${id}:`, error);
+                return null;
+            }
+        },
+        
+        getByMonth: async function(year, month) {
+            try {
+                const startDate = new Date(year, month, 1).toISOString();
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString(); // Dernier jour du mois
+                
+                // Récupérer tous les revenus et filtrer par date
+                const incomes = await this.getAll();
+                return incomes.filter(income => {
+                    const incomeDate = new Date(income.date).toISOString();
+                    return incomeDate >= startDate && incomeDate <= endDate;
+                });
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des revenus pour ${month}/${year}:`, error);
+                return [];
+            }
+        },
+        
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const start = new Date(startDate).toISOString();
+                const end = new Date(endDate).toISOString();
+                
+                // Récupérer tous les revenus et filtrer par date
+                const incomes = await this.getAll();
+                return incomes.filter(income => {
+                    const incomeDate = new Date(income.date).toISOString();
+                    return incomeDate >= start && incomeDate <= end;
+                });
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des revenus par plage de dates:`, error);
+                return [];
+            }
+        },
+        
+        getByCategory: async function(categoryId) {
+            try {
+                // Récupérer tous les revenus et filtrer par catégorie
+                const incomes = await this.getAll();
+                return incomes.filter(income => income.categoryId === categoryId);
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des revenus par catégorie:`, error);
+                return [];
+            }
+        },
+        
+        getByDepartment: async function(departmentId) {
+            try {
+                // Récupérer tous les revenus et filtrer par département
+                const incomes = await this.getAll();
+                return incomes.filter(income => income.departmentId === departmentId);
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des revenus par département:`, error);
+                return [];
+            }
+        },
+        
+        save: async function(income) {
+            try {
+                // Get category name for display purposes
+                let categoryName = '';
+                if (income.categoryId) {
+                    const category = await DB.incomeCategories.getById(income.categoryId);
+                    if (category) {
+                        categoryName = category.name;
+                    }
+                }
+                
+                // Get department name based on departmentId
+                let departmentName = '';
+                // Department mapping (exclude 'general' for incomes as they're typically associated with a business unit)
+                const departmentMapping = {
+                    'shawarma': 'Shawarma',
+                    'ice-cream': 'Crème Glacée',
+                    'pizza': 'Pizza',
+                    'kitchen': 'Cuisine',
+                    'bar': 'Bar',
+                    'billard': 'Billard',
+                    'chicha': 'Chicha'
+                };
+                departmentName = departmentMapping[income.departmentId] || income.departmentId;
+                
+                // Génération d'un nouvel ID si le revenu est nouveau
+                if (!income.id) {
+                    income.id = Date.now().toString();
+                    income.createdAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'add',
+                        entity: 'income',
+                        entityId: income.id,
+                        description: `Revenu de ${income.amount} FCFA ajouté: ${income.description} (${categoryName})`
+                    });
+                } else {
+                    // Mise à jour d'un revenu existant
+                    income.updatedAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'edit',
+                        entity: 'income',
+                        entityId: income.id,
+                        description: `Revenu modifié: ${income.description} (${categoryName})`
+                    });
+                }
+                
+                // Store category name and department name for easier access
+                income.categoryName = categoryName;
+                income.departmentName = departmentName;
+                
+                await DB.write(DB.STORES.INCOMES, 'put', income);
+                return income;
+            } catch (error) {
+                console.error(`Erreur lors de l'enregistrement du revenu:`, error);
+                return null;
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const incomeToDelete = await this.getById(id);
+                
+                if (!incomeToDelete) return false;
+                
+                // Log activity
+                await DB.activities.add({
+                    type: 'delete',
+                    entity: 'income',
+                    entityId: id,
+                    description: `Revenu supprimé: ${incomeToDelete.description} (${incomeToDelete.amount} FCFA)`
+                });
+                
+                await DB.write(DB.STORES.INCOMES, 'delete', id);
+                return true;
+            } catch (error) {
+                console.error(`Erreur lors de la suppression du revenu ${id}:`, error);
+                return false;
+            }
+        }
+    },
+    
+    /**
+     * Méthodes CRUD pour les catégories de dépenses
+     */
+    expenseCategories: {
+        getAll: async function() {
+            try {
+                return await DB.read(DB.STORES.EXPENSE_CATEGORIES, 'getAll') || [];
+            } catch (error) {
+                console.error('Erreur lors de la récupération des catégories de dépenses:', error);
+                return [];
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                return await DB.read(DB.STORES.EXPENSE_CATEGORIES, 'get', id) || null;
+            } catch (error) {
+                console.error(`Erreur lors de la récupération de la catégorie de dépense ${id}:`, error);
+                return null;
+            }
+        },
+        
+        save: async function(category) {
+            try {
+                // Génération d'un nouvel ID si la catégorie est nouvelle
+                if (!category.id) {
+                    category.id = Date.now().toString();
+                    category.createdAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'add',
+                        entity: 'expenseCategory',
+                        entityId: category.id,
+                        description: `Catégorie de dépense ajoutée: ${category.name}`
+                    });
+                } else {
+                    // Mise à jour d'une catégorie existante
+                    category.updatedAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'edit',
+                        entity: 'expenseCategory',
+                        entityId: category.id,
+                        description: `Catégorie de dépense modifiée: ${category.name}`
+                    });
+                }
+                
+                await DB.write(DB.STORES.EXPENSE_CATEGORIES, 'put', category);
+                return category;
+            } catch (error) {
+                console.error(`Erreur lors de l'enregistrement de la catégorie de dépense:`, error);
+                return null;
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const categoryToDelete = await this.getById(id);
+                
+                if (!categoryToDelete) return false;
+                
+                // Check if any expenses use this category
+                const relatedExpenses = await DB.expenses.getByCategory(id);
+                if (relatedExpenses.length > 0) {
+                    console.error(`Impossible de supprimer la catégorie: ${relatedExpenses.length} dépenses y sont associées.`);
+                    return false;
+                }
+                
+                // Log activity
+                await DB.activities.add({
+                    type: 'delete',
+                    entity: 'expenseCategory',
+                    entityId: id,
+                    description: `Catégorie de dépense supprimée: ${categoryToDelete.name}`
+                });
+                
+                await DB.write(DB.STORES.EXPENSE_CATEGORIES, 'delete', id);
+                return true;
+            } catch (error) {
+                console.error(`Erreur lors de la suppression de la catégorie de dépense ${id}:`, error);
+                return false;
+            }
+        }
+    },
+    
+    /**
+     * Méthodes CRUD pour les catégories de revenus
+     */
+    incomeCategories: {
+        getAll: async function() {
+            try {
+                return await DB.read(DB.STORES.INCOME_CATEGORIES, 'getAll') || [];
+            } catch (error) {
+                console.error('Erreur lors de la récupération des catégories de revenus:', error);
+                return [];
+            }
+        },
+        
+        getById: async function(id) {
+            try {
+                return await DB.read(DB.STORES.INCOME_CATEGORIES, 'get', id) || null;
+            } catch (error) {
+                console.error(`Erreur lors de la récupération de la catégorie de revenu ${id}:`, error);
+                return null;
+            }
+        },
+        
+        save: async function(category) {
+            try {
+                // Génération d'un nouvel ID si la catégorie est nouvelle
+                if (!category.id) {
+                    category.id = Date.now().toString();
+                    category.createdAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'add',
+                        entity: 'incomeCategory',
+                        entityId: category.id,
+                        description: `Catégorie de revenu ajoutée: ${category.name}`
+                    });
+                } else {
+                    // Mise à jour d'une catégorie existante
+                    category.updatedAt = new Date().toISOString();
+                    
+                    // Log activity
+                    await DB.activities.add({
+                        type: 'edit',
+                        entity: 'incomeCategory',
+                        entityId: category.id,
+                        description: `Catégorie de revenu modifiée: ${category.name}`
+                    });
+                }
+                
+                await DB.write(DB.STORES.INCOME_CATEGORIES, 'put', category);
+                return category;
+            } catch (error) {
+                console.error(`Erreur lors de l'enregistrement de la catégorie de revenu:`, error);
+                return null;
+            }
+        },
+        
+        delete: async function(id) {
+            try {
+                const categoryToDelete = await this.getById(id);
+                
+                if (!categoryToDelete) return false;
+                
+                // Check if any incomes use this category
+                const relatedIncomes = await DB.incomes.getByCategory(id);
+                if (relatedIncomes.length > 0) {
+                    console.error(`Impossible de supprimer la catégorie: ${relatedIncomes.length} revenus y sont associés.`);
+                    return false;
+                }
+                
+                // Log activity
+                await DB.activities.add({
+                    type: 'delete',
+                    entity: 'incomeCategory',
+                    entityId: id,
+                    description: `Catégorie de revenu supprimée: ${categoryToDelete.name}`
+                });
+                
+                await DB.write(DB.STORES.INCOME_CATEGORIES, 'delete', id);
+                return true;
+            } catch (error) {
+                console.error(`Erreur lors de la suppression de la catégorie de revenu ${id}:`, error);
+                return false;
+            }
+        }
+    },
+    
+    /**
      * Fonctions d'exportation et d'importation des données
      */
     export: async function() {
@@ -895,6 +1434,11 @@ const DB = {
                 sanctions: await this.sanctions.getAll(),
                 debts: await this.debts.getAll(),
                 settings: await this.settings.get(),
+                // Include accounting data
+                expenses: await this.expenses.getAll(),
+                incomes: await this.incomes.getAll(),
+                expenseCategories: await this.expenseCategories.getAll(),
+                incomeCategories: await this.incomeCategories.getAll(),
                 exportDate: new Date().toISOString(),
                 version: '1.0'
             };
@@ -923,6 +1467,12 @@ const DB = {
             await DB.write(DB.STORES.SANCTIONS, 'clear');
             await DB.write(DB.STORES.DEBTS, 'clear');
             
+            // Clear accounting data if present in import
+            if (data.expenses) await DB.write(DB.STORES.EXPENSES, 'clear');
+            if (data.incomes) await DB.write(DB.STORES.INCOMES, 'clear');
+            if (data.expenseCategories) await DB.write(DB.STORES.EXPENSE_CATEGORIES, 'clear');
+            if (data.incomeCategories) await DB.write(DB.STORES.INCOME_CATEGORIES, 'clear');
+            
             // Importer les données
             for (const employee of data.employees) {
                 await DB.write(DB.STORES.EMPLOYEES, 'put', employee);
@@ -942,6 +1492,31 @@ const DB = {
             
             for (const debt of data.debts) {
                 await DB.write(DB.STORES.DEBTS, 'put', debt);
+            }
+            
+            // Import accounting data if present
+            if (data.expenses) {
+                for (const expense of data.expenses) {
+                    await DB.write(DB.STORES.EXPENSES, 'put', expense);
+                }
+            }
+            
+            if (data.incomes) {
+                for (const income of data.incomes) {
+                    await DB.write(DB.STORES.INCOMES, 'put', income);
+                }
+            }
+            
+            if (data.expenseCategories) {
+                for (const category of data.expenseCategories) {
+                    await DB.write(DB.STORES.EXPENSE_CATEGORIES, 'put', category);
+                }
+            }
+            
+            if (data.incomeCategories) {
+                for (const category of data.incomeCategories) {
+                    await DB.write(DB.STORES.INCOME_CATEGORIES, 'put', category);
+                }
             }
             
             // Enregistrer les paramètres
@@ -975,12 +1550,73 @@ const DB = {
             await DB.write(DB.STORES.ACTIVITIES, 'clear');
             await DB.write(DB.STORES.SETTINGS, 'clear');
             
+            // Clear accounting data
+            await DB.write(DB.STORES.EXPENSES, 'clear');
+            await DB.write(DB.STORES.INCOMES, 'clear');
+            await DB.write(DB.STORES.EXPENSE_CATEGORIES, 'clear');
+            await DB.write(DB.STORES.INCOME_CATEGORIES, 'clear');
+            
             // Réinitialiser la base de données
             await this.init();
             
             return true;
         } catch (error) {
             console.error('Erreur lors de la réinitialisation de la base de données:', error);
+            return false;
+        }
+    },
+    
+    /**
+     * Initialize default categories for accounting if needed
+     */
+    initAccountingDefaults: async function() {
+        try {
+            // Check if we already have expense categories
+            let expenseCategories = await this.expenseCategories.getAll();
+            if (expenseCategories.length === 0) {
+                console.log("Initializing default expense categories...");
+                const defaultExpenseCategories = [
+                    { name: 'Salaires' },
+                    { name: 'Loyer' },
+                    { name: 'Services Publics' },
+                    { name: 'Fournitures' },
+                    { name: 'Équipement' },
+                    { name: 'Maintenance' },
+                    { name: 'Marketing' },
+                    { name: 'Transport' },
+                    { name: 'Nourriture' },
+                    { name: 'Taxes' },
+                    { name: 'Assurance' },
+                    { name: 'Autres' }
+                ];
+                
+                for (const category of defaultExpenseCategories) {
+                    await this.expenseCategories.save(category);
+                }
+                console.log("Default expense categories created.");
+            }
+            
+            // Check if we already have income categories
+            let incomeCategories = await this.incomeCategories.getAll();
+            if (incomeCategories.length === 0) {
+                console.log("Initializing default income categories...");
+                const defaultIncomeCategories = [
+                    { name: 'Ventes' },
+                    { name: 'Services' },
+                    { name: 'Remboursements' },
+                    { name: 'Investissements' },
+                    { name: 'Autres' }
+                ];
+                
+                for (const category of defaultIncomeCategories) {
+                    await this.incomeCategories.save(category);
+                }
+                console.log("Default income categories created.");
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation des catégories par défaut:', error);
             return false;
         }
     }

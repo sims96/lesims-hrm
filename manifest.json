@@ -1,7 +1,7 @@
 {
-    "name": "Le Sims - Gestion des Salaires",
-    "short_name": "Le Sims",
-    "description": "Application de gestion des salaires des employés pour Le Sims",
+    "name": "LeSimsage - Gestion des Salaires et Comptabilité",
+    "short_name": "LeSimsage",
+    "description": "Application de gestion de comptabilte et des salaires des employés du Sims",
     "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#1e1e2f",

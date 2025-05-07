@@ -1,0 +1,487 @@
+/**
+ * accounting.css
+ * Styles for the Accounting Module of Le Sims Application
+ */
+
+/* ==================
+   Tab Navigation & Content
+   ================== */
+   .tab-navigation {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)); /* Use variable with fallback */
+    padding-bottom: 0.5rem;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  }
+  
+  .tab-item {
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-secondary, #aaa);
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transitions */
+    font-weight: 500;
+    border: 1px solid transparent; /* Prepare for active border */
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+  
+  .tab-item i {
+    font-size: 1rem;
+    margin-right: 3px; /* Consistent spacing */
+  }
+  
+  .tab-item:hover {
+    background-color: var(--hover-bg-light, rgba(255, 255, 255, 0.07));
+    color: var(--text-primary, #eee);
+  }
+  
+  .tab-item.active {
+    background-color: var(--primary-bg-light, rgba(98, 0, 234, 0.15));
+    color: var(--primary-light, #bb86fc);
+    font-weight: 600;
+    border: 1px solid var(--primary, #6200ea);
+    box-shadow: 0 2px 5px rgba(98, 0, 234, 0.2); /* Subtle shadow for active tab */
+  }
+  
+  /* Default state for tab content */
+  .tab-content {
+    display: none; /* Hide inactive tabs */
+    padding-top: 1.5rem; /* Space between tabs and content */
+    animation: fadeIn 0.4s ease-out; /* Fade in animation */
+  }
+  
+  /* Active tab content */
+  .tab-content.active {
+    display: block; /* Show active tab */
+  }
+  
+  /* ==================
+     Filters & Summary Cards
+     ================== */
+  .filters {
+    display: flex;
+    flex-wrap: wrap; /* Allow filters to wrap */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.1); /* Slight background for filter area */
+    border-radius: 8px;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1 1 180px; /* Flexible sizing for filter groups */
+  }
+  
+  .filter-group label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #aaa);
+    font-weight: 500;
+  }
+  
+  .search-box {
+    flex-basis: 250px; /* Give search box a decent base width */
+  }
+  
+  .stats-cards {
+      margin-bottom: 1.5rem;
+  }
+  
+  /* ==================
+     Tables (Expenses & Income)
+     ================== */
+  .table-responsive {
+    overflow-x: auto; /* Ensure horizontal scroll on small screens */
+  }
+  
+  #acc-expenses-table,
+  #acc-income-table {
+    width: 100%;
+    min-width: 650px; /* Minimum width before horizontal scroll appears */
+  }
+  
+  /* Right-align amount columns */
+  #acc-expenses-table th:nth-child(5),
+  #acc-expenses-table td:nth-child(5),
+  #acc-income-table th:nth-child(5),
+  #acc-income-table td:nth-child(5) {
+    text-align: right;
+    white-space: nowrap; /* Prevent amount wrapping */
+  }
+  
+  /* Style amounts */
+  .expense-amount {
+    color: var(--danger, #f44336);
+    font-weight: 600;
+  }
+  
+  .income-amount {
+    color: var(--success, #4caf50);
+    font-weight: 600;
+  }
+  
+  /* Table Actions */
+  .table-actions {
+      text-align: right;
+      white-space: nowrap;
+  }
+  
+  .table-actions .action-btn {
+      margin-left: 0.4rem;
+  }
+  
+  /* ==================
+     Empty States
+     ================== */
+  .empty-message {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-hint, #888);
+    display: flex; /* Use flex for alignment */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--border-color-light, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    margin-top: 1rem;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .empty-message i {
+    font-size: 2.5rem; /* Larger icon */
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  .empty-message p {
+      margin-bottom: 1rem;
+      font-size: 1.1em;
+  }
+  
+  
+  /* ==================
+     Pagination Controls
+     ================== */
+  .pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  }
+  
+  .pagination-controls button {
+    min-width: 38px; /* Slightly larger buttons */
+    height: 38px;
+    border-radius: 5px;
+    background: var(--button-secondary-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid transparent;
+    color: var(--text-secondary, #aaa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-standard);
+    font-weight: 500;
+  }
+  
+  .pagination-controls button:hover:not(:disabled) {
+    background: var(--hover-bg-light, rgba(255, 255, 255, 0.12));
+    color: var(--text-primary, #eee);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .pagination-controls button.active {
+    background-color: var(--primary, #6200ea);
+    color: white;
+    font-weight: 600;
+    border-color: var(--primary-dark, #3700b3);
+  }
+  
+  .pagination-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
+  .pagination-controls span {
+      padding: 0 0.5rem;
+      color: var(--text-hint, #888);
+  }
+  
+  /* ==================
+     Report Section Styling - Using Dynamically Created Element
+     ================== */
+  
+  /* Container for report filters and output */
+  .reports-container {
+    max-width: 100%;
+    display: block;
+    overflow: visible;
+  }
+  
+  /* Ensure the specific tab content for reports is visible when active */
+  #acc-reports-tab-content.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+    min-height: 200px;
+    height: auto;
+    overflow: visible;
+  }
+  
+  /* --- Styles for the DYNAMICALLY created report container --- */
+  /* Basic card styling might still be useful if using card class */
+  .dynamic-report-output.card {
+      /* JS applies critical styles like border, background, margin directly */
+      /* Base card styles from your framework/global CSS might apply here */
+  }
+  .dynamic-report-output .dynamic-report-header {
+      /* JS applies flex, padding, border-bottom directly */
+  }
+  .dynamic-report-output .dynamic-report-header h2 {
+      /* JS applies styles directly */
+  }
+  .dynamic-report-output .dynamic-report-content {
+      /* JS applies padding, overflow-x */
+  }
+  
+  
+  /* --- Styles for the CONTENT WITHIN the dynamic report --- */
+  /* These rules style the HTML generated by the report functions (tables, etc.) */
+  
+  /* Report Header (Period, Summary Text) inside the dynamic content div */
+  .report-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-color-light, rgba(255, 255, 255, 0.2));
+  }
+  
+  .report-header p {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary, #aaa);
+  }
+  .report-header p strong {
+      color: var(--text-primary, #eee);
+  }
+  
+  /* Report Tables inside the dynamic content div */
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .report-table th,
+  .report-table td {
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border-color-light, rgba(255, 255, 255, 0.15));
+    text-align: left;
+    vertical-align: middle;
+  }
+  
+  .report-table th {
+    background-color: rgba(0, 0, 0, 0.25);
+    font-weight: 600;
+    color: var(--text-primary, #eee);
+  }
+  
+  /* Report Total Row */
+  .report-table tr.report-total {
+    font-weight: 600;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-top: 2px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  }
+  
+  .report-table tr.report-total td {
+      color: var(--text-primary, #eee);
+  }
+  
+  /* Value Highlighting */
+  .report-table .positive-value {
+    color: var(--success, #4caf50);
+    font-weight: 500;
+  }
+  
+  .report-table .negative-value {
+    color: var(--danger, #f44336);
+    font-weight: 500;
+  }
+  
+  /* PNL Report Specific Styling inside the dynamic content div */
+  .pnl-summary {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 1.2rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border-color-light, rgba(255, 255, 255, 0.15));
+  }
+  .pnl-summary h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: var(--text-primary, #eee);
+  }
+  
+  .pnl-summary .report-table td:first-child {
+      font-weight: 500;
+  }
+  
+  .pnl-result-positive {
+    color: var(--success-dark, #388e3c);
+    font-weight: 700;
+    font-size: 1.1em;
+  }
+  
+  .pnl-result-negative {
+    color: var(--danger-dark, #d32f2f);
+    font-weight: 700;
+    font-size: 1.1em;
+  }
+  
+  /* Initial state message for reports tab */
+  #no-report-message {
+      margin-top: 2rem;
+       /* Display controlled by JS */
+  }
+  
+  
+  /* ==================
+     Modal Styling (General - assumes base modal styles exist)
+     ================== */
+  /* Input Group for Amount */
+  .input-group {
+    display: flex;
+    align-items: center;
+  }
+  
+  .input-group .form-control {
+    flex: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  
+  .input-group-text {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--input-border-color, rgba(255, 255, 255, 0.1));
+    border-left: none;
+    padding: 0.75rem 1rem; /* Match form-control padding */
+    color: var(--text-secondary, #aaa);
+    border-top-right-radius: var(--border-radius, 8px);
+    border-bottom-right-radius: var(--border-radius, 8px);
+    font-weight: 500;
+  }
+  
+  /* Delete Modal Details */
+  .confirm-details {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+      font-size: 0.9rem;
+  }
+  .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.3rem;
+  }
+  .detail-label {
+      color: var(--text-secondary);
+      margin-right: 1rem;
+  }
+  .detail-value {
+      font-weight: 500;
+  }
+  
+  
+  /* ==================
+     Responsive Adjustments
+     ================== */
+  @media (max-width: 992px) {
+    /* Allow tabs to scroll horizontally if needed */
+    .tab-navigation {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.25rem; /* Reduce padding to prevent scrollbar overlap */
+         /* Hide scrollbar visually but allow scrolling */
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+     .tab-navigation::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+  
+    .tab-item {
+      padding: 0.5rem 0.8rem; /* Slightly smaller padding */
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .filters {
+      flex-direction: column; /* Stack filters vertically */
+      gap: 0.8rem;
+      padding: 0.8rem;
+    }
+  
+    .filter-group {
+        flex-basis: auto; /* Reset flex basis */
+        width: 100%; /* Full width */
+    }
+  
+    .search-box {
+        flex-basis: auto;
+        width: 100%;
+    }
+  
+    /* Adjust table font size on smaller screens */
+    #acc-expenses-table,
+    #acc-income-table,
+    .report-table { /* Target report table specifically if needed */
+        font-size: 0.9rem;
+    }
+     .report-table th,
+     .report-table td { /* Target report table specifically if needed */
+        padding: 0.6rem 0.7rem;
+     }
+  }
+  
+  @media (max-width: 576px) {
+    .tab-item {
+      font-size: 0.9rem; /* Smaller text on tabs */
+      padding: 0.5rem 0.6rem;
+      gap: 0.4rem;
+    }
+    .tab-item i {
+        font-size: 0.9rem;
+    }
+  
+    .page-actions {
+      flex-direction: column;
+      align-items: stretch; /* Make buttons full width */
+      gap: 0.5rem;
+    }
+  
+     /* Further reduce table padding */
+     .report-table th,
+     .report-table td { /* Target report table specifically if needed */
+        padding: 0.5rem 0.6rem;
+     }
+     #acc-expenses-table th,
+     #acc-expenses-table td,
+     #acc-income-table th,
+     #acc-income-table td {
+          padding: 0.6rem 0.5rem;
+     }
+  }
+  
+  /* Animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

@@ -1,0 +1,429 @@
+<div class="page-header">
+    <h1>Comptabilité</h1>
+    <div class="page-actions">
+        <button id="add-income-btn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau Revenu
+        </button>
+        <button id="add-expense-btn" class="btn btn-accent">
+            <i class="fas fa-plus"></i> Nouvelle Dépense
+        </button>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="tab-navigation">
+            <div class="tab-item active" data-tab="expenses">
+                <i class="fas fa-credit-card"></i> Dépenses
+            </div>
+            <div class="tab-item" data-tab="income">
+                <i class="fas fa-coins"></i> Revenus
+            </div>
+            <div class="tab-item" data-tab="reports">
+                <i class="fas fa-chart-pie"></i> Rapports
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="acc-expenses-tab-content" class="tab-content active">
+            <div id="acc-expense-filters-section" class="filters mb-4">
+                <div class="filter-group">
+                    <label for="expense-month-filter">Mois</label>
+                    <select id="expense-month-filter" class="form-control">
+                        <option value="0">Janvier</option>
+                        <option value="1">Février</option>
+                        <option value="2">Mars</option>
+                        <option value="3">Avril</option>
+                        <option value="4">Mai</option>
+                        <option value="5">Juin</option>
+                        <option value="6">Juillet</option>
+                        <option value="7">Août</option>
+                        <option value="8">Septembre</option>
+                        <option value="9">Octobre</option>
+                        <option value="10">Novembre</option>
+                        <option value="11">Décembre</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="expense-year-filter">Année</label>
+                    <select id="expense-year-filter" class="form-control">
+                        </select>
+                </div>
+                <div class="filter-group">
+                    <label for="expense-category-filter">Catégorie</label>
+                    <select id="expense-category-filter" class="form-control">
+                        <option value="all">Toutes les catégories</option>
+                        </select>
+                </div>
+                <div class="filter-group">
+                    <label for="expense-department-filter">Département</label>
+                    <select id="expense-department-filter" class="form-control">
+                        <option value="all">Tous les départements</option>
+                        </select>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="expense-search" placeholder="Rechercher...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+
+            <div id="acc-expense-summary-section" class="stats-cards mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="stat-info">
+                        <h4>Total Dépenses</h4>
+                        <h2 id="total-expenses">0 FCFA</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-invoice"></i></div>
+                    <div class="stat-info">
+                        <h4>Nombre de Transactions</h4>
+                        <h2 id="expense-count">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tag"></i></div>
+                    <div class="stat-info">
+                        <h4>Catégorie Principale</h4>
+                        <h2 id="top-expense-category">-</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-building"></i></div>
+                    <div class="stat-info">
+                        <h4>Département Principal</h4>
+                        <h2 id="top-expense-department">-</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="acc-expenses-table" class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Catégorie</th>
+                            <th>Département</th>
+                            <th>Montant</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="acc-expenses-tbody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="no-expenses-message" class="empty-message" style="display: none;">
+                <i class="fas fa-file-invoice-dollar fa-3x mb-3"></i>
+                <p>Aucune dépense pour la période sélectionnée</p>
+                <button id="add-first-expense-btn" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Ajouter une dépense
+                </button>
+            </div>
+
+            <div id="acc-expense-pagination-controls" class="pagination-controls">
+                </div>
+        </div>
+
+        <div id="acc-income-tab-content" class="tab-content">
+            <div id="acc-income-filters-section" class="filters mb-4">
+                <div class="filter-group">
+                    <label for="income-month-filter">Mois</label>
+                    <select id="income-month-filter" class="form-control">
+                        <option value="0">Janvier</option>
+                        <option value="1">Février</option>
+                        <option value="2">Mars</option>
+                        <option value="3">Avril</option>
+                        <option value="4">Mai</option>
+                        <option value="5">Juin</option>
+                        <option value="6">Juillet</option>
+                        <option value="7">Août</option>
+                        <option value="8">Septembre</option>
+                        <option value="9">Octobre</option>
+                        <option value="10">Novembre</option>
+                        <option value="11">Décembre</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="income-year-filter">Année</label>
+                    <select id="income-year-filter" class="form-control">
+                        </select>
+                </div>
+                <div class="filter-group">
+                    <label for="income-category-filter">Catégorie</label>
+                    <select id="income-category-filter" class="form-control">
+                        <option value="all">Toutes les catégories</option>
+                        </select>
+                </div>
+                <div class="filter-group">
+                    <label for="income-department-filter">Département</label>
+                    <select id="income-department-filter" class="form-control">
+                        <option value="all">Tous les départements</option>
+                        </select>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="income-search" placeholder="Rechercher...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+
+            <div id="acc-income-summary-section" class="stats-cards mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                    <div class="stat-info">
+                        <h4>Total Revenus</h4>
+                        <h2 id="total-income">0 FCFA</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="stat-info">
+                        <h4>Nombre de Transactions</h4>
+                        <h2 id="income-count">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tag"></i></div>
+                    <div class="stat-info">
+                        <h4>Catégorie Principale</h4>
+                        <h2 id="top-income-category">-</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-building"></i></div>
+                    <div class="stat-info">
+                        <h4>Département Principal</h4>
+                        <h2 id="top-income-department">-</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="acc-income-table" class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Catégorie</th>
+                            <th>Département</th>
+                            <th>Montant</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="acc-income-tbody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="no-income-message" class="empty-message" style="display: none;">
+                <i class="fas fa-coins fa-3x mb-3"></i>
+                <p>Aucun revenu pour la période sélectionnée</p>
+                <button id="add-first-income-btn" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Ajouter un revenu
+                </button>
+            </div>
+
+            <div id="acc-income-pagination-controls" class="pagination-controls">
+                </div>
+        </div>
+
+        <div id="acc-reports-tab-content" class="tab-content">
+            <div class="reports-container">
+                <div class="card filter-card mb-4">
+                    <div class="card-body">
+                        <h3 class="mb-3">Période du Rapport</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="report-type">Type de Rapport</label>
+                                <select id="report-type" class="form-control">
+                                    <option value="expenses">Dépenses par Catégorie</option>
+                                    <option value="department-expenses">Dépenses par Département</option>
+                                    <option value="income">Revenus par Catégorie</option>
+                                    <option value="department-income">Revenus par Département</option>
+                                    <option value="pnl">Profit & Perte</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="report-period">Période</label>
+                                <select id="report-period" class="form-control">
+                                    <option value="month">Mois en cours</option>
+                                    <option value="quarter">Trimestre en cours</option>
+                                    <option value="year">Année en cours</option>
+                                    <option value="custom">Personnalisée</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="custom-date-range" class="form-grid mt-3" style="display: none;">
+                            <div class="form-group">
+                                <label for="report-start-date">Date de début</label>
+                                <input type="date" id="report-start-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="report-end-date">Date de fin</label>
+                                <input type="date" id="report-end-date" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-actions mt-3">
+                            <button id="generate-report-btn" class="btn btn-primary">
+                                <i class="fas fa-chart-bar"></i> Générer le Rapport
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="no-report-message" class="empty-message">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <p>Sélectionnez les paramètres et générez un rapport pour visualiser les données.</p>
+                </div>
+            </div>
+        </div>
+    </div> </div> <script type="text/template" id="acc-expense-modal-template">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>{{title}}</h3>
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="expense-form">
+                <input type="hidden" id="expense-id" value="{{id}}">
+
+                <div class="form-group">
+                    <label for="expense-date">Date *</label>
+                    <input type="date" id="expense-date" class="form-control" required value="{{date}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="expense-description">Description *</label>
+                    <input type="text" id="expense-description" class="form-control" required placeholder="Ex: Achat de fournitures" value="{{description}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="expense-amount">Montant *</label>
+                    <div class="input-group">
+                        <input type="number" id="expense-amount" class="form-control" required min="0" step="any" placeholder="0" value="{{amount}}"> <span class="input-group-text currency-symbol">FCFA</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="expense-category">Catégorie *</label>
+                    <select id="expense-category" class="form-control" required>
+                        <option value="">Sélectionner une catégorie</option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="expense-assignment">Assignation *</label>
+                    <select id="expense-assignment" class="form-control" required>
+                        <option value="general">Général</option>
+                        <option value="department">Départemental</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="expense-department-group" style="display: none;">
+                    <label for="expense-department">Département Concerné *</label>
+                    <select id="expense-department" class="form-control">
+                        <option value="">Sélectionner un département</option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="expense-notes">Notes</label>
+                    <textarea id="expense-notes" class="form-control" rows="3" placeholder="Notes supplémentaires...">{{notes}}</textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button id="expense-cancel-btn" class="btn btn-outline">Annuler</button>
+            <button id="expense-save-btn" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </div>
+</script>
+
+<script type="text/template" id="acc-income-modal-template">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>{{title}}</h3>
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="income-form">
+                <input type="hidden" id="income-id" value="{{id}}">
+
+                <div class="form-group">
+                    <label for="income-date">Date *</label>
+                    <input type="date" id="income-date" class="form-control" required value="{{date}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="income-description">Description *</label>
+                    <input type="text" id="income-description" class="form-control" required placeholder="Ex: Vente de produits" value="{{description}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="income-amount">Montant *</label>
+                    <div class="input-group">
+                        <input type="number" id="income-amount" class="form-control" required min="0" step="any" placeholder="0" value="{{amount}}"> <span class="input-group-text currency-symbol">FCFA</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="income-category">Catégorie *</label>
+                    <select id="income-category" class="form-control" required>
+                        <option value="">Sélectionner une catégorie</option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="income-department">Département *</label>
+                    <select id="income-department" class="form-control" required>
+                        <option value="">Sélectionner un département</option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="income-notes">Notes</label>
+                    <textarea id="income-notes" class="form-control" rows="3" placeholder="Notes supplémentaires...">{{notes}}</textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button id="income-cancel-btn" class="btn btn-outline">Annuler</button>
+            <button id="income-save-btn" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </div>
+</script>
+
+<script type="text/template" id="acc-delete-modal-template">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Confirmation de Suppression</h3>
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Êtes-vous sûr de vouloir supprimer cette {{type}} ?</p>
+            <div class="confirm-details">
+                <div class="detail-row">
+                    <div class="detail-label">Date:</div>
+                    <div class="detail-value">{{date}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Description:</div>
+                    <div class="detail-value">{{description}}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Montant:</div>
+                    <div class="detail-value">{{amount}}</div>
+                </div>
+            </div>
+            <p class="text-danger mt-3"><strong>Attention:</strong> Cette action est irréversible.</p>
+        </div>
+        <div class="modal-footer">
+            <button id="delete-cancel-btn" class="btn btn-outline">Annuler</button>
+            <button id="delete-confirm-btn" class="btn btn-danger">Supprimer</button>
+        </div>
+    </div>
+</script>

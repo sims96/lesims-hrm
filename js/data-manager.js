@@ -2,6 +2,7 @@
  * data-manager.js
  * Gestionnaire de données avec support hors ligne (Enhanced Version)
  * Utilise IndexedDB en mode hors ligne et Supabase en ligne
+ * Updated with Accounting Module Support
  */
 
 const DataManager = {
@@ -451,6 +452,8 @@ const DataManager = {
                         if (entity === 'salaries' && data?.year !== undefined && data?.month !== undefined) {
                             result = await window.DB.salaries.getByMonth(data.year, data.month);
                             // Optionally cache this specific query result - complex, might skip
+                        } else if ((entity === 'expenses' || entity === 'incomes') && data?.year !== undefined && data?.month !== undefined) {
+                            result = await window.DB[entity].getByMonth(data.year, data.month);
                         } else {
                              throw new Error(`Invalid parameters for ${entity}.${action}`);
                         }
@@ -472,6 +475,27 @@ const DataManager = {
                               throw new Error(`Invalid parameters for ${entity}.${action}`);
                          }
                          break;
+                    case 'getByDateRange':
+                        if ((entity === 'expenses' || entity === 'incomes') && data?.startDate && data?.endDate) {
+                            result = await window.DB[entity].getByDateRange(data.startDate, data.endDate);
+                        } else {
+                            throw new Error(`Invalid parameters for ${entity}.${action}`);
+                        }
+                        break;
+                    case 'getByDepartment':
+                        if ((entity === 'expenses' || entity === 'incomes') && data) { // data is departmentId
+                            result = await window.DB[entity].getByDepartment(data);
+                        } else {
+                            throw new Error(`Invalid parameters for ${entity}.${action}`);
+                        }
+                        break;
+                    case 'getByCategory':
+                        if ((entity === 'expenses' || entity === 'incomes') && data) { // data is categoryId
+                            result = await window.DB[entity].getByCategory(data);
+                        } else {
+                            throw new Error(`Invalid parameters for ${entity}.${action}`);
+                        }
+                        break;
                     // Settings are special - usually fetch remote and update local
                     case 'getSettings':
                          result = await window.DB.settings.get();
@@ -559,6 +583,12 @@ const DataManager = {
                              const date = new Date(salary.period.startDate); // Use period start date for month check
                              return date.getFullYear() === data.year && date.getMonth() === data.month;
                          });
+                     } else if ((entity === 'expenses' || entity === 'incomes') && data?.year !== undefined && data?.month !== undefined) {
+                         const allLocal = await LocalDB[entity].getAll();
+                         result = allLocal.filter(item => {
+                             const date = new Date(item.date);
+                             return date.getFullYear() === data.year && date.getMonth() === data.month;
+                         });
                      } else {
                           throw new Error(`Invalid parameters for local ${entity}.${action}`);
                      }
@@ -579,6 +609,35 @@ const DataManager = {
                           throw new Error(`Invalid parameters for local ${entity}.${action}`);
                      }
                      break;
+                 case 'getByDateRange':
+                    if ((entity === 'expenses' || entity === 'incomes') && data?.startDate && data?.endDate) {
+                        const startDate = new Date(data.startDate);
+                        const endDate = new Date(data.endDate);
+                        const allLocal = await LocalDB[entity].getAll();
+                        result = allLocal.filter(item => {
+                            const itemDate = new Date(item.date);
+                            return itemDate >= startDate && itemDate <= endDate;
+                        });
+                    } else {
+                        throw new Error(`Invalid parameters for local ${entity}.${action}`);
+                    }
+                    break;
+                case 'getByDepartment':
+                    if ((entity === 'expenses' || entity === 'incomes') && data) { // data is departmentId
+                        const allLocal = await LocalDB[entity].getAll();
+                        result = allLocal.filter(item => item.departmentId === data);
+                    } else {
+                        throw new Error(`Invalid parameters for local ${entity}.${action}`);
+                    }
+                    break;
+                case 'getByCategory':
+                    if ((entity === 'expenses' || entity === 'incomes') && data) { // data is categoryId
+                        const allLocal = await LocalDB[entity].getAll();
+                        result = allLocal.filter(item => item.categoryId === data);
+                    } else {
+                        throw new Error(`Invalid parameters for local ${entity}.${action}`);
+                    }
+                    break;
                  case 'getSettings':
                      result = await LocalDB.settings.get();
                      break;
@@ -678,6 +737,59 @@ const DataManager = {
          }
     },
 
+    // New accounting entities
+    expenses: {
+        getAll: async function() { return await DataManager.performOperation('expenses', 'getAll'); },
+        getById: async function(id) { return await DataManager.performOperation('expenses', 'getById', id); },
+        save: async function(data) { return await DataManager.performOperation('expenses', 'save', data); },
+        delete: async function(id) { return await DataManager.performOperation('expenses', 'delete', id); },
+        getByDateRange: async function(startDate, endDate) { 
+            return await DataManager.performOperation('expenses', 'getByDateRange', { startDate, endDate }); 
+        },
+        getByMonth: async function(year, month) { 
+            return await DataManager.performOperation('expenses', 'getByMonth', { year, month }); 
+        },
+        getByDepartment: async function(departmentId) { 
+            return await DataManager.performOperation('expenses', 'getByDepartment', departmentId); 
+        },
+        getByCategory: async function(categoryId) { 
+            return await DataManager.performOperation('expenses', 'getByCategory', categoryId); 
+        }
+    },
+
+    incomes: {
+        getAll: async function() { return await DataManager.performOperation('incomes', 'getAll'); },
+        getById: async function(id) { return await DataManager.performOperation('incomes', 'getById', id); },
+        save: async function(data) { return await DataManager.performOperation('incomes', 'save', data); },
+        delete: async function(id) { return await DataManager.performOperation('incomes', 'delete', id); },
+        getByDateRange: async function(startDate, endDate) { 
+            return await DataManager.performOperation('incomes', 'getByDateRange', { startDate, endDate }); 
+        },
+        getByMonth: async function(year, month) { 
+            return await DataManager.performOperation('incomes', 'getByMonth', { year, month }); 
+        },
+        getByDepartment: async function(departmentId) { 
+            return await DataManager.performOperation('incomes', 'getByDepartment', departmentId); 
+        },
+        getByCategory: async function(categoryId) { 
+            return await DataManager.performOperation('incomes', 'getByCategory', categoryId); 
+        }
+    },
+
+    expenseCategories: {
+        getAll: async function() { return await DataManager.performOperation('expenseCategories', 'getAll'); },
+        getById: async function(id) { return await DataManager.performOperation('expenseCategories', 'getById', id); },
+        save: async function(data) { return await DataManager.performOperation('expenseCategories', 'save', data); },
+        delete: async function(id) { return await DataManager.performOperation('expenseCategories', 'delete', id); }
+    },
+
+    incomeCategories: {
+        getAll: async function() { return await DataManager.performOperation('incomeCategories', 'getAll'); },
+        getById: async function(id) { return await DataManager.performOperation('incomeCategories', 'getById', id); },
+        save: async function(data) { return await DataManager.performOperation('incomeCategories', 'save', data); },
+        delete: async function(id) { return await DataManager.performOperation('incomeCategories', 'delete', id); }
+    },
+
     settings: {
         get: async function() { return await DataManager.performOperation('settings', 'getSettings'); },
         save: async function(data) { return await DataManager.performOperation('settings', 'saveSettings', data); }
@@ -712,14 +824,17 @@ const DataManager = {
         window.showLoader("Téléchargement des données initiales...");
         try {
             // Fetch essential data concurrently
-            const [employees, settings, salaries, advances, sanctions, debts] = await Promise.all([
+            const [employees, settings, salaries, advances, sanctions, debts, expenses, incomes, expenseCategories, incomeCategories] = await Promise.all([
                 window.DB.employees.getAll(),
                 window.DB.settings.get(),
-                window.DB.salaries.getAll(), // Fetch all or just recent? Fetching all might be large.
+                window.DB.salaries.getAll(),
                 window.DB.advances.getAll(),
                 window.DB.sanctions.getAll(),
-                window.DB.debts.getAll()
-                // Add other essential data fetches here
+                window.DB.debts.getAll(),
+                window.DB.expenses?.getAll() || [],
+                window.DB.incomes?.getAll() || [],
+                window.DB.expenseCategories?.getAll() || [],
+                window.DB.incomeCategories?.getAll() || []
             ]);
 
             // Cache fetched data locally using Promise.all for concurrency
@@ -729,8 +844,11 @@ const DataManager = {
                  LocalDB.salaries.saveAll(salaries || []),
                  LocalDB.advances.saveAll(advances || []),
                  LocalDB.sanctions.saveAll(sanctions || []),
-                 LocalDB.debts.saveAll(debts || [])
-                 // Add other caching operations here
+                 LocalDB.debts.saveAll(debts || []),
+                 LocalDB.expenses.saveAll(expenses || []),
+                 LocalDB.incomes.saveAll(incomes || []),
+                 LocalDB.expenseCategories.saveAll(expenseCategories || []),
+                 LocalDB.incomeCategories.saveAll(incomeCategories || [])
             ]);
 
             console.log("Initial data fetched and cached locally.");
@@ -748,9 +866,6 @@ const DataManager = {
 // ==============================================
 //            LocalDB (IndexedDB Wrapper)
 // ==============================================
-// No changes needed to the LocalDB structure itself
-// Re-paste the LocalDB object code from your original file here.
-// ... (Paste LocalDB object code here) ...
 const LocalDB = {
     // Database connection
     db: null,
@@ -781,7 +896,26 @@ const LocalDB = {
                     debts: { keyPath: 'id', indexes: [['employeeId', 'employeeId'], ['date', 'date'], ['isPaid', 'isPaid']] },
                     activities: { keyPath: 'id', indexes: [['timestamp', 'timestamp']] },
                     settings: { keyPath: 'id' },
-                    pendingChanges: { keyPath: 'pendingId', indexes: [['timestamp', 'timestamp']] }
+                    pendingChanges: { keyPath: 'pendingId', indexes: [['timestamp', 'timestamp']] },
+                    // New stores for accounting module
+                    expenses: { 
+                        keyPath: 'id', 
+                        indexes: [
+                            ['date', 'date'], 
+                            ['departmentId', 'departmentId'],
+                            ['categoryId', 'categoryId']
+                        ]
+                    },
+                    incomes: { 
+                        keyPath: 'id', 
+                        indexes: [
+                            ['date', 'date'], 
+                            ['departmentId', 'departmentId'],
+                            ['categoryId', 'categoryId']
+                        ]
+                    },
+                    expenseCategories: { keyPath: 'id' },
+                    incomeCategories: { keyPath: 'id' }
                 };
 
                 Object.entries(stores).forEach(([storeName, config]) => {
@@ -1038,12 +1172,63 @@ const LocalDB = {
         getAll: async function() { return await LocalDB.getAll('pendingChanges'); },
         save: async function(data) { return await LocalDB.save('pendingChanges', data); },
         delete: async function(id) { return await LocalDB.delete('pendingChanges', id); }
+    },
+    
+    // New entity wrappers for accounting module
+    expenses: {
+        getAll: async function() { return await LocalDB.getAll('expenses'); },
+        getById: async function(id) { return await LocalDB.getById('expenses', id); },
+        save: async function(data) { return await LocalDB.save('expenses', data); },
+        saveAll: async function(items) { return await LocalDB.saveAll('expenses', items); },
+        delete: async function(id) { return await LocalDB.delete('expenses', id); },
+        getByDateRange: async function(startDate, endDate) {
+            // When implemented in IndexedDB, use a cursor with IDBKeyRange
+            // For now, we'll filter in-memory
+            const allExpenses = await LocalDB.getAll('expenses');
+            return allExpenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                return expenseDate >= start && expenseDate <= end;
+            });
+        }
+    },
+    
+    incomes: {
+        getAll: async function() { return await LocalDB.getAll('incomes'); },
+        getById: async function(id) { return await LocalDB.getById('incomes', id); },
+        save: async function(data) { return await LocalDB.save('incomes', data); },
+        saveAll: async function(items) { return await LocalDB.saveAll('incomes', items); },
+        delete: async function(id) { return await LocalDB.delete('incomes', id); },
+        getByDateRange: async function(startDate, endDate) {
+            // When implemented in IndexedDB, use a cursor with IDBKeyRange
+            // For now, we'll filter in-memory
+            const allIncomes = await LocalDB.getAll('incomes');
+            return allIncomes.filter(income => {
+                const incomeDate = new Date(income.date);
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                return incomeDate >= start && incomeDate <= end;
+            });
+        }
+    },
+    
+    expenseCategories: {
+        getAll: async function() { return await LocalDB.getAll('expenseCategories'); },
+        getById: async function(id) { return await LocalDB.getById('expenseCategories', id); },
+        save: async function(data) { return await LocalDB.save('expenseCategories', data); },
+        saveAll: async function(items) { return await LocalDB.saveAll('expenseCategories', items); },
+        delete: async function(id) { return await LocalDB.delete('expenseCategories', id); }
+    },
+    
+    incomeCategories: {
+        getAll: async function() { return await LocalDB.getAll('incomeCategories'); },
+        getById: async function(id) { return await LocalDB.getById('incomeCategories', id); },
+        save: async function(data) { return await LocalDB.save('incomeCategories', data); },
+        saveAll: async function(items) { return await LocalDB.saveAll('incomeCategories', items); },
+        delete: async function(id) { return await LocalDB.delete('incomeCategories', id); }
     }
 };
-// ==============================================
-//            End LocalDB
-// ==============================================
-
 
 // Export to window
 window.DataManager = DataManager;
