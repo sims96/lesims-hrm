@@ -2,7 +2,7 @@
  * app.js
  * Fichier principal de l'application
  * Application de Gestion des Salaires Le Sims
- * (Updated for DataManager integration & enhanced UI feedback & Accounting Module & Charts)
+ * (Updated to fix redundant initialization call)
  */
 
 const App = {
@@ -55,12 +55,10 @@ const App = {
             await this.loadDashboard(); // Load initial dashboard view (uses DataManager)
             console.log("Dashboard loaded.");
 
-            // Setup default accounting categories if needed (assuming setupDefaultAccountingData is defined elsewhere or within AccountingManager)
-            if (typeof AccountingManager?.setupDefaultCategories === 'function') {
-                 // Check if setupDefaultAccountingData is still needed or if AccountingManager.setupDefaultCategories covers it
-                 await AccountingManager.setupDefaultCategories();
-                 console.log("Default accounting categories checked/initialized.");
-            }
+            // FIX: Removed the redundant call to AccountingManager.setupDefaultCategories().
+            // This logic is already correctly handled within AccountingManager.init(),
+            // which is called during the App.initModules() loop. This prevents
+            // the double initialization observed in the console logs.
 
             console.log('Application initialisée (avec support hors ligne)');
             return true;
