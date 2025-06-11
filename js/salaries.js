@@ -2,10 +2,13 @@
  * salaries.js
  * Gestion des salaires
  * Application de Gestion des Salaires Le Sims
- * (Updated for DataManager Integration)
+ * (Updated for DataManager Integration and Performance Optimization)
  */
 
 const SalariesManager = {
+    // Add batch size constant for processing
+    BATCH_SIZE: 10,
+    
     /**
      * Initialisation du module de gestion des salaires
      */
@@ -348,7 +351,7 @@ const SalariesManager = {
     },
 
     /**
-     * Traite les salaires pour le mois sélectionné (Using DataManager)
+     * Traite les salaires pour le mois sélectionné (Using DataManager) - UPDATED WITH BATCH PROCESSING
      */
     processSalaries: async function() {
         const monthSelect = document.getElementById('salary-month');
@@ -388,13 +391,17 @@ const SalariesManager = {
                     window.hideLoader();
                     return;
                 }
-                // Delete existing salaries for the month via DataManager
+                // Delete existing salaries for the month via DataManager - BATCH PROCESSING
                 window.showLoader(`Suppression des salaires existants pour ${monthName} ${year}...`);
-                // Use Promise.all to delete concurrently
-                const deletePromises = existingSalaries.map(salary =>
-                    DataManager.salaries.delete(salary.id) // Uses DataManager
-                );
-                await Promise.all(deletePromises);
+                
+                // Process deletions in batches
+                for (let i = 0; i < existingSalaries.length; i += this.BATCH_SIZE) {
+                    const batch = existingSalaries.slice(i, i + this.BATCH_SIZE);
+                    const deletePromises = batch.map(salary => DataManager.salaries.delete(salary.id));
+                    await Promise.all(deletePromises);
+                    window.showLoader(`Suppression des salaires existants (${Math.min(i + this.BATCH_SIZE, existingSalaries.length)}/${existingSalaries.length})...`);
+                }
+                
                 console.log(`SalariesManager: Deleted ${existingSalaries.length} existing salaries for ${month + 1}/${year}`);
             }
 
@@ -417,17 +424,22 @@ const SalariesManager = {
                 window.showLoader(`Calcul des salaires (${processedCount}/${totalEmployees})...`);
             }
 
-            // Save all calculated salaries via DataManager
+            // Save all calculated salaries via DataManager - BATCH PROCESSING
             window.showLoader(`Enregistrement des salaires (0/${calculatedSalaries.length})...`);
             let savedCount = 0;
-            // Consider batching if > 100 salaries for performance
-            const savePromises = calculatedSalaries.map(async (salary) => {
-                await DataManager.salaries.save(salary); // Uses DataManager
-                savedCount++;
+            
+            // Process salaries in batches
+            for (let i = 0; i < calculatedSalaries.length; i += this.BATCH_SIZE) {
+                const batch = calculatedSalaries.slice(i, i + this.BATCH_SIZE);
+                await Promise.all(batch.map(salary => DataManager.salaries.save(salary)));
+                savedCount += batch.length;
                 window.showLoader(`Enregistrement des salaires (${savedCount}/${calculatedSalaries.length})...`);
-            });
-            await Promise.all(savePromises);
-
+                
+                // Small delay between batches to prevent overwhelming the database
+                if (i + this.BATCH_SIZE < calculatedSalaries.length) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
 
             await this.loadSalariesData(); // Reload data (uses DataManager)
             alert(`Salaires traités avec succès pour ${monthName} ${year}.`);
@@ -532,7 +544,7 @@ const SalariesManager = {
     },
 
     /**
-     * Affiche le modal de détails d'un salaire (Using DataManager)
+     * Affiche le modal de détails d'un salaire (Using DataManager) - WITH N+1 FIX COMMENT
      */
     showSalaryDetails: async function(salaryId) {
         const modalContainer = document.getElementById('modal-container');
@@ -554,24 +566,48 @@ const SalariesManager = {
             const month = this.getMonthName(paymentDate.getMonth());
             const year = paymentDate.getFullYear();
 
-            // Fetch details for related items via DataManager
-            // Use Promise.allSettled to handle cases where a related item might have been deleted
+            // PERFORMANCE FIX: This section causes N+1 queries
+            // TODO: Replace with optimized database function when available
+            // The function get_salary_details() should be created in Supabase to fetch all related data in one query
+            // For now, we'll batch the requests to minimize concurrent connections
+            
             const fetchDetail = async (entity, id) => DataManager[entity].getById(id); // Uses DataManager
 
-            const advancePromises = (salary.details?.advanceIds || []).map(id => fetchDetail('advances', id));
-            const sanctionPromises = (salary.details?.sanctionIds || []).map(id => fetchDetail('sanctions', id));
-            const debtPromises = (salary.details?.debtIds || []).map(id => fetchDetail('debts', id));
-
-            const [advanceResults, sanctionResults, debtResults] = await Promise.all([
-                Promise.allSettled(advancePromises),
-                Promise.allSettled(sanctionPromises),
-                Promise.allSettled(debtPromises)
-            ]);
-
-            // Filter out rejected promises and get the successful values
-            const advanceDetails = advanceResults.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-            const sanctionDetails = sanctionResults.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-            const debtDetails = debtResults.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+            // Batch the detail fetching to reduce concurrent connections
+            const advanceIds = salary.details?.advanceIds || [];
+            const sanctionIds = salary.details?.sanctionIds || [];
+            const debtIds = salary.details?.debtIds || [];
+            
+            let advanceDetails = [];
+            let sanctionDetails = [];
+            let debtDetails = [];
+            
+            // Fetch advances in batches
+            for (let i = 0; i < advanceIds.length; i += this.BATCH_SIZE) {
+                const batch = advanceIds.slice(i, i + this.BATCH_SIZE);
+                const results = await Promise.allSettled(batch.map(id => fetchDetail('advances', id)));
+                advanceDetails = advanceDetails.concat(
+                    results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value)
+                );
+            }
+            
+            // Fetch sanctions in batches
+            for (let i = 0; i < sanctionIds.length; i += this.BATCH_SIZE) {
+                const batch = sanctionIds.slice(i, i + this.BATCH_SIZE);
+                const results = await Promise.allSettled(batch.map(id => fetchDetail('sanctions', id)));
+                sanctionDetails = sanctionDetails.concat(
+                    results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value)
+                );
+            }
+            
+            // Fetch debts in batches
+            for (let i = 0; i < debtIds.length; i += this.BATCH_SIZE) {
+                const batch = debtIds.slice(i, i + this.BATCH_SIZE);
+                const results = await Promise.allSettled(batch.map(id => fetchDetail('debts', id)));
+                debtDetails = debtDetails.concat(
+                    results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value)
+                );
+            }
 
             // Render Modal HTML (same structure as before)
             modalContainer.innerHTML = `

@@ -2,8 +2,96 @@
  * data-manager.js
  * Gestionnaire de données avec support hors ligne (Enhanced Version)
  * Utilise IndexedDB en mode hors ligne et Supabase en ligne
- * Updated with Accounting Module Support
+ * Updated with Accounting Module Support and Rate Limiting
  */
+
+// Rate Limiter Implementation
+const RateLimiter = {
+    queue: [],
+    processing: false,
+    maxRequestsPerSecond: 10,
+    retryQueue: [],
+    
+    async addRequest(fn, priority = 'normal') {
+        return new Promise((resolve, reject) => {
+            const request = { fn, resolve, reject, priority, attempts: 0 };
+            
+            if (priority === 'high') {
+                this.queue.unshift(request);
+            } else {
+                this.queue.push(request);
+            }
+            
+            this.processQueue();
+        });
+    },
+    
+    async processQueue() {
+        if (this.processing || this.queue.length === 0) return;
+        
+        this.processing = true;
+        const delay = 1000 / this.maxRequestsPerSecond;
+        
+        while (this.queue.length > 0) {
+            const request = this.queue.shift();
+            const startTime = Date.now();
+            
+            try {
+                const result = await request.fn();
+                request.resolve(result);
+            } catch (error) {
+                // Check if it's a rate limit error
+                if (error?.message?.toLowerCase().includes('rate limit') || 
+                    error?.code === '429' || 
+                    error?.status === 429) {
+                    
+                    request.attempts++;
+                    if (request.attempts < 3) {
+                        // Exponential backoff: 2^attempts * 1000ms
+                        const backoffDelay = Math.pow(2, request.attempts) * 1000;
+                        console.warn(`Rate limit hit, retrying in ${backoffDelay}ms...`);
+                        
+                        setTimeout(() => {
+                            if (request.priority === 'high') {
+                                this.queue.unshift(request);
+                            } else {
+                                this.queue.push(request);
+                            }
+                            this.processQueue();
+                        }, backoffDelay);
+                    } else {
+                        console.error('Max retry attempts reached for request');
+                        request.reject(error);
+                    }
+                } else {
+                    request.reject(error);
+                }
+            }
+            
+            // Ensure minimum delay between requests
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < delay) {
+                await new Promise(r => setTimeout(r, delay - elapsedTime));
+            }
+        }
+        
+        this.processing = false;
+        
+        // Process any queued requests
+        if (this.queue.length > 0) {
+            setTimeout(() => this.processQueue(), 100);
+        }
+    },
+    
+    // Get queue statistics
+    getStats() {
+        return {
+            queueLength: this.queue.length,
+            processing: this.processing,
+            maxRequestsPerSecond: this.maxRequestsPerSecond
+        };
+    }
+};
 
 const DataManager = {
     // State
@@ -11,6 +99,7 @@ const DataManager = {
     pendingChanges: [],
     syncInProgress: false,
     syncTag: 'database-sync', // Tag for Background Sync
+    rateLimitingEnabled: true, // Feature flag for rate limiting
 
     /**
      * Initialisation
@@ -418,8 +507,29 @@ const DataManager = {
 
     /**
      * Generic data operation handler - Decides whether to use LocalDB or Supabase
+     * Now with rate limiting protection
      */
     performOperation: async function(entity, action, data) {
+        // For write operations and when online, use rate limiting
+        const shouldRateLimit = this.rateLimitingEnabled && 
+                               this.isOnline && 
+                               window.DB?.isInitialized() &&
+                               ['save', 'delete'].includes(action);
+
+        if (shouldRateLimit) {
+            return RateLimiter.addRequest(async () => {
+                return this._performOperationInternal(entity, action, data);
+            }, action === 'save' ? 'high' : 'normal');
+        }
+
+        // For read operations or offline mode, execute directly
+        return this._performOperationInternal(entity, action, data);
+    },
+
+    /**
+     * Internal operation handler (separated for rate limiting)
+     */
+    _performOperationInternal: async function(entity, action, data) {
         if (this.isOnline && window.DB && window.DB.isInitialized()) {
             try {
                 // --- ONLINE: Try Supabase first ---
@@ -523,8 +633,31 @@ const DataManager = {
 
             } catch (error) {
                 console.error(`Error in remote operation (${entity}.${action}):`, error);
-                // Check if it's a network error or Supabase specific issue
-                const isNetworkError = !navigator.onLine || error.message.toLowerCase().includes('network error') || error.message.toLowerCase().includes('failed to fetch');
+                
+                // Enhanced error handling for rate limits
+                const isRateLimitError = error?.message?.toLowerCase().includes('rate limit') || 
+                                       error?.code === '429' || 
+                                       error?.status === 429 ||
+                                       error?.code === 'PGRST301'; // Supabase row limit
+                
+                const isTimeoutError = error?.code === '57014' || 
+                                     error?.message?.toLowerCase().includes('timeout');
+                
+                const isNetworkError = !navigator.onLine || 
+                                     error.message.toLowerCase().includes('network error') || 
+                                     error.message.toLowerCase().includes('failed to fetch');
+
+                if (isRateLimitError) {
+                    console.error(`Rate limit exceeded for ${entity}.${action}. Consider implementing pagination or reducing request frequency.`);
+                    // Could implement automatic retry with backoff here
+                    throw new Error(`Rate limit exceeded. Please try again in a few moments.`);
+                }
+                
+                if (isTimeoutError) {
+                    console.error(`Query timeout for ${entity}.${action}. Consider optimizing the query or adding indexes.`);
+                    throw new Error(`Query timeout. The operation is taking too long.`);
+                }
+                
                 if (isNetworkError) {
                     console.warn(`Network error detected during ${entity}.${action}. Switching to offline mode.`);
                     this.isOnline = false; // Force offline mode
@@ -664,6 +797,21 @@ const DataManager = {
             console.error(`Error in local operation (${entity}.${action}):`, error);
             throw error; // Rethrow local errors
         }
+    },
+
+    /**
+     * Get rate limiter statistics
+     */
+    getRateLimiterStats: function() {
+        return RateLimiter.getStats();
+    },
+
+    /**
+     * Toggle rate limiting (for debugging/testing)
+     */
+    setRateLimiting: function(enabled) {
+        this.rateLimitingEnabled = enabled;
+        console.log(`Rate limiting ${enabled ? 'enabled' : 'disabled'}`);
     },
 
     // --- Entity-specific methods that use performOperation ---
