@@ -458,15 +458,15 @@ const DataManager = {
         const { entity, action, data } = change;
         let result;
 
-        // --- CONFLICT RESOLUTION (Placeholder - Requires Timestamps) ---
-        // if (action === 'update' && data.id && data.updated_at) {
-        //     const serverRecord = await window.DB[entity].getById(data.id);
-        //     if (serverRecord && serverRecord.updated_at && new Date(data.updated_at) < new Date(serverRecord.updated_at)) {
-        //         console.warn(`Conflict detected for ${entity} ID ${data.id}. Local data is older.`);
-        //         throw new Error("Conflict detected"); // Let syncChanges handle marking it
-        //     }
-        // }
-        // --- END CONFLICT RESOLUTION PLACEHOLDER ---
+        // --- CONFLICT RESOLUTION ---
+        if (action === 'update' && data.id && data.updated_at) {
+            const serverRecord = await window.DB[entity].getById(data.id);
+            if (serverRecord && serverRecord.updated_at && new Date(data.updated_at) < new Date(serverRecord.updated_at)) {
+            console.warn(`Conflict detected for ${entity} ID ${data.id}. Local data is older.`);
+            throw new Error("Conflict detected"); // Let syncChanges handle marking it
+            }
+        }
+    
 
         // Add/Update 'updated_at' before saving to remote
         const dataToSave = { ...data, updated_at: new Date().toISOString() };
