@@ -179,6 +179,25 @@ const AccountingManager = {
                 console.log(`Created ${createdExpenseCategories} default expense categories.`);
             } else {
                 console.log(`Found ${expenseCategories.length} existing expense categories.`);
+                
+                // Check if we need to add any missing default categories
+                const existingExpenseNames = new Set(
+                    expenseCategories.map(cat => cat.name.trim().toLowerCase())
+                );
+                
+                const defaultExpenseCategories = [
+                    'Salaires', 'Loyer', 'Services Publics', 'Fournitures', 
+                    'Équipement', 'Maintenance', 'Marketing', 'Transport', 
+                    'Nourriture', 'Taxes', 'Boisson', 'Autres'
+                ];
+                
+                for (const categoryName of defaultExpenseCategories) {
+                    if (!existingExpenseNames.has(categoryName.toLowerCase())) {
+                        await DataManager.expenseCategories.save({ name: categoryName });
+                        createdExpenseCategories++;
+                        console.log(`Added missing expense category: ${categoryName}`);
+                    }
+                }
             }
 
             // Create default income categories if none exist
@@ -198,11 +217,28 @@ const AccountingManager = {
                 console.log(`Created ${createdIncomeCategories} default income categories.`);
             } else {
                 console.log(`Found ${incomeCategories.length} existing income categories.`);
+                
+                // Check if we need to add any missing default categories
+                const existingIncomeNames = new Set(
+                    incomeCategories.map(cat => cat.name.trim().toLowerCase())
+                );
+                
+                const defaultIncomeCategories = [
+                    'Ventes', 'Services', 'Remboursements', 'Investissements', 'Autres'
+                ];
+                
+                for (const categoryName of defaultIncomeCategories) {
+                    if (!existingIncomeNames.has(categoryName.toLowerCase())) {
+                        await DataManager.incomeCategories.save({ name: categoryName });
+                        createdIncomeCategories++;
+                        console.log(`Added missing income category: ${categoryName}`);
+                    }
+                }
             }
 
             // Ensure local state is updated if defaults were created
             if (createdExpenseCategories > 0 || createdIncomeCategories > 0) {
-                 await this.loadInitialData(); // Reload all initial data to get the new IDs
+                await this.loadInitialData(); // Reload all initial data to get the new IDs
             }
 
             return {
@@ -238,9 +274,28 @@ const AccountingManager = {
             // Set currency symbol
             this.currencySymbol = settings?.currency || 'FCFA';
 
-            // Use fetched categories or defaults if empty/error
-            this.expenseCategories = (fetchedExpCats && fetchedExpCats.length > 0) ? fetchedExpCats : [...this.DEFAULT_EXPENSE_CATEGORIES];
-            this.incomeCategories = (fetchedIncCats && fetchedIncCats.length > 0) ? fetchedIncCats : [...this.DEFAULT_INCOME_CATEGORIES];
+            // --- Deduplication Logic ---
+            const deduplicate = (categories) => {
+                if (!Array.isArray(categories)) return [];
+                const seen = new Map();
+                categories.forEach(cat => {
+                    if (cat && cat.name) {
+                        const name = cat.name.trim().toLowerCase();
+                        if (!seen.has(name)) {
+                            seen.set(name, cat);
+                        }
+                    }
+                });
+                return Array.from(seen.values());
+            };
+
+            // Use fetched categories with deduplication or defaults if empty/error
+            this.expenseCategories = (fetchedExpCats && fetchedExpCats.length > 0) 
+                ? deduplicate(fetchedExpCats) 
+                : [...this.DEFAULT_EXPENSE_CATEGORIES];
+            this.incomeCategories = (fetchedIncCats && fetchedIncCats.length > 0) 
+                ? deduplicate(fetchedIncCats) 
+                : [...this.DEFAULT_INCOME_CATEGORIES];
             this.departments = (fetchedDepts && fetchedDepts.length > 0) ? fetchedDepts : [...this.DEPARTMENT_TYPES];
 
             console.log(`Initial config loaded: ${this.expenseCategories.length} expense cats, ${this.incomeCategories.length} income cats, ${this.departments.length} depts. Currency: ${this.currencySymbol}`);
