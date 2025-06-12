@@ -354,6 +354,8 @@ const DB = {
              } catch (error) { return handleSupabaseError(error, "activities.add"); }
          },
     },
+
+    // --- START: CORRECTED expenses and incomes objects ---
     expenses: {
         getAll: async function() {
             try {
@@ -363,6 +365,36 @@ const DB = {
                 const transformedData = (data || []).map(expense => ({...expense, amount: parseFloat(expense.amount), categoryName: expense.expense_categories?.name }));
                 return DB.utils.snakeToCamelArray(transformedData);
             } catch (error) { return handleSupabaseError(error, "expenses.getAll"); }
+        },
+        getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                const { data, error } = await client.from('expenses').select(`*, expense_categories(name)`).eq('id', id).single();
+                if (error) { if (error.code === 'PGRST116') return null; return handleSupabaseError(error, `expenses.getById(${id})`); }
+                const transformed = {...data, amount: parseFloat(data.amount), categoryName: data.expense_categories?.name };
+                return DB.utils.snakeToCamel(transformed);
+            } catch (error) { return handleSupabaseError(error, `expenses.getById(${id})`); }
+        },
+        getByMonth: async function(year, month) {
+            try {
+                const client = await DB._ensureInitialized();
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+                const { data, error } = await client.from('expenses').select(`*, expense_categories(name)`).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, `expenses.getByMonth(${year}-${month})`);
+                const transformedData = (data || []).map(expense => ({...expense, amount: parseFloat(expense.amount), categoryName: expense.expense_categories?.name }));
+                return DB.utils.snakeToCamelArray(transformedData);
+            } catch (error) { return handleSupabaseError(error, `expenses.getByMonth(${year}-${month})`); }
+        },
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('expenses').select(`*, expense_categories(name)`).gte('date', new Date(startDate).toISOString()).lte('date', new Date(endDate).toISOString()).order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, `expenses.getByDateRange`);
+                const transformedData = (data || []).map(expense => ({...expense, amount: parseFloat(expense.amount), categoryName: expense.expense_categories?.name }));
+                return DB.utils.snakeToCamelArray(transformedData);
+            } catch (error) { return handleSupabaseError(error, `expenses.getByDateRange`); }
         },
         save: async function(expenseData) {
              try {
@@ -396,6 +428,36 @@ const DB = {
                 return DB.utils.snakeToCamelArray(transformedData);
             } catch (error) { return handleSupabaseError(error, "incomes.getAll"); }
         },
+         getById: async function(id) {
+            try {
+                const client = await DB._ensureInitialized();
+                if (!id) return null;
+                const { data, error } = await client.from('incomes').select(`*, income_categories(name)`).eq('id', id).single();
+                if (error) { if (error.code === 'PGRST116') return null; return handleSupabaseError(error, `incomes.getById(${id})`); }
+                const transformed = {...data, amount: parseFloat(data.amount), categoryName: data.income_categories?.name };
+                return DB.utils.snakeToCamel(transformed);
+            } catch (error) { return handleSupabaseError(error, `incomes.getById(${id})`); }
+        },
+        getByMonth: async function(year, month) {
+            try {
+                const client = await DB._ensureInitialized();
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+                const { data, error } = await client.from('incomes').select(`*, income_categories(name)`).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, `incomes.getByMonth(${year}-${month})`);
+                const transformedData = (data || []).map(income => ({...income, amount: parseFloat(income.amount), categoryName: income.income_categories?.name }));
+                return DB.utils.snakeToCamelArray(transformedData);
+            } catch (error) { return handleSupabaseError(error, `incomes.getByMonth(${year}-${month})`); }
+        },
+        getByDateRange: async function(startDate, endDate) {
+            try {
+                const client = await DB._ensureInitialized();
+                const { data, error } = await client.from('incomes').select(`*, income_categories(name)`).gte('date', new Date(startDate).toISOString()).lte('date', new Date(endDate).toISOString()).order('date', { ascending: false });
+                if (error) return handleSupabaseError(error, `incomes.getByDateRange`);
+                const transformedData = (data || []).map(income => ({...income, amount: parseFloat(income.amount), categoryName: income.income_categories?.name }));
+                return DB.utils.snakeToCamelArray(transformedData);
+            } catch (error) { return handleSupabaseError(error, `incomes.getByDateRange`); }
+        },
         save: async function(incomeData) {
             try {
                 const client = await DB._ensureInitialized();
@@ -418,6 +480,8 @@ const DB = {
             try { const client = await DB._ensureInitialized(); if (!id) return false; const { error } = await client.from('incomes').delete().eq('id', id); if (error) { handleSupabaseError(error, `incomes.delete(${id})`); return false; } return true; } catch (error) { handleSupabaseError(error, `incomes.delete(${id})`); return false; }
         }
     },
+    // --- END: CORRECTED expenses and incomes objects ---
+
     expenseCategories: {
         getAll: async function() {
             try { const client = await DB._ensureInitialized(); const { data, error } = await client.from('expense_categories').select('*').order('name'); if (error) return handleSupabaseError(error, "expenseCategories.getAll"); return data || []; } catch (error) { return handleSupabaseError(error, "expenseCategories.getAll"); }
