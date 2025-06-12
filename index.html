@@ -285,6 +285,17 @@
                         <span id="sync-indicator" class="idle"></span>
                     </div>
                     <div class="actions">
+                        <!-- START: New Auth Button Container -->
+                        <div id="auth-container">
+                             <button id="login-btn" class="btn btn-primary">
+                                 <i class="fas fa-sign-in-alt"></i> Connexion Admin
+                             </button>
+                             <button id="logout-btn" class="btn btn-outline" style="display: none;">
+                                 <i class="fas fa-sign-out-alt"></i> Déconnexion
+                             </button>
+                             <span id="user-email" style="display:none; margin-left: 10px; font-size: 0.9em;"></span>
+                        </div>
+                        <!-- END: New Auth Button Container -->
                         <button id="export-data" class="btn btn-outline">
                             <i class="fas fa-download"></i> Exporter
                         </button>
