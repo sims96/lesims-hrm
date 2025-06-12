@@ -8,7 +8,8 @@
 const SalariesManager = {
     // Add batch size constant for processing
     BATCH_SIZE: 10,
-    
+    isInitialized: false, 
+
     /**
      * Initialisation du module de gestion des salaires
      */
@@ -35,8 +36,11 @@ const SalariesManager = {
              }
         }
         this.bindEvents(); // Setup event listeners
+        this.isInitialized = true; 
         console.log("SalariesManager: Initialized successfully.");
     },
+
+// ... rest of the file
 
     /**
      * Renders the static HTML structure for the salaries page. (Now async due to settings fetch)

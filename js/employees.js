@@ -6,6 +6,8 @@
  */
 
 const EmployeesManager = {
+    isInitialized: false, 
+
     /**
      * Initialisation du module de gestion des employés
      */
@@ -31,6 +33,7 @@ const EmployeesManager = {
              }
         }
         this.bindEvents(); // Setup event listeners
+        this.isInitialized = true; 
         console.log("EmployeesManager initialized.");
     },
 
