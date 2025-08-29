@@ -1,0 +1,226 @@
+/* ====== AWESOME CHART STYLES ====== */
+
+/* Glowing chart containers with depth effect */
+.chart-container {
+    position: relative;
+    border-radius: 12px;
+    padding: 10px;
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    box-shadow: 
+      0 4px 15px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(98, 0, 234, 0.2),
+      inset 0 0 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+  }
+  
+  /* Stunning hover effect on chart container */
+  .chart-container:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 
+      0 10px 25px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(98, 0, 234, 0.4),
+      inset 0 0 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Fancy background pattern with subtle animation */
+  .chart-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(circle at 30% 40%, rgba(98, 0, 234, 0.05), transparent 30%),
+      radial-gradient(circle at 70% 60%, rgba(0, 176, 255, 0.05), transparent 40%);
+    opacity: 0.5;
+    z-index: 0;
+    animation: chartPatternRotate 60s infinite linear;
+    pointer-events: none;
+  }
+  
+  @keyframes chartPatternRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Make chart canvas position relative to container pattern */
+  .chart-container canvas {
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* Titles with gradient text */
+  .chart-card h3 {
+    background: linear-gradient(90deg, #9d46ff, #00b0ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    display: inline-block;
+    position: relative;
+  }
+  
+  /* Add a glowing underline to chart titles */
+  .chart-card h3::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #9d46ff, #00b0ff);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(98, 0, 234, 0.5);
+    transition: width 0.3s ease;
+  }
+  
+  .chart-card:hover h3::after {
+    width: 100%;
+  }
+  
+  /* Fun loading animation for charts */
+  @keyframes chartLoad {
+    0% { opacity: 0; transform: scale(0.85); }
+    70% { opacity: 1; transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  /* Apply loading animation to chart canvas */
+  #salary-chart-canvas, #monthly-chart-canvas {
+    animation: chartLoad 1s cubic-bezier(0.5, 1.6, 0.4, 0.7) forwards;
+    transform-origin: center;
+  }
+  
+  /* Chart card enhanced styling */
+  .chart-card {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.5), rgba(20, 20, 36, 0.8));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+  
+  .chart-card:hover {
+    border-color: rgba(98, 0, 234, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(98, 0, 234, 0.2);
+  }
+  
+  /* Custom tooltip styling */
+  .custom-chart-tooltip {
+    background: rgba(20, 20, 36, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(98, 0, 234, 0.3) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+    color: #fff !important;
+    font-weight: 500 !important;
+    pointer-events: none !important;
+    transform: scale(0) !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    transform-origin: center bottom !important;
+  }
+  
+  .custom-chart-tooltip.show {
+    transform: scale(1) !important;
+  }
+  
+  .custom-chart-tooltip .tooltip-title {
+    margin-bottom: 5px !important;
+    color: #9d46ff !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding-bottom: 5px !important;
+  }
+  
+  .custom-chart-tooltip .tooltip-body {
+    font-size: 0.9em !important;
+  }
+  
+  .custom-chart-tooltip .tooltip-value {
+    font-weight: 600 !important;
+    color: #00b0ff !important;
+  }
+  
+  /* Add a pulsing indicator to chart legend items */
+  .chart-legend-item::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 5px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  }
+  
+  /* Add a subtle glowing line under the chart on hover */
+  .chart-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #9d46ff, #00b0ff);
+    box-shadow: 0 0 10px rgba(98, 0, 234, 0.7);
+    transition: width 0.4s ease-out;
+    border-radius: 3px;
+    z-index: 2;
+  }
+  
+  .chart-container:hover::after {
+    width: 80%;
+  }
+  
+  /* Animated dots on the lines for the monthly chart */
+  .chart-dot-pulse {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #00b0ff;
+    box-shadow: 0 0 10px rgba(0, 176, 255, 0.7);
+    animation: dotPulse 2s infinite;
+    z-index: 10;
+  }
+  
+  @keyframes dotPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Make placeholder shimmer when loading */
+  .chart-placeholder {
+    background: linear-gradient(90deg, rgba(30, 30, 46, 0.5), rgba(40, 40, 56, 0.5), rgba(30, 30, 46, 0.5));
+    background-size: 200% 100%;
+    animation: placeholderShimmer 2s infinite;
+  }
+  
+  @keyframes placeholderShimmer {
+    0% { background-position: -100% 0; }
+    100% { background-position: 100% 0; }
+  }
+  
+  .chart-placeholder i {
+    animation: float 3s ease-in-out infinite;
+    color: #9d46ff;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 10px rgba(98, 0, 234, 0.5));
+  }
+  
+  @keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0); }
+  }
