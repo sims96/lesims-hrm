@@ -6,6 +6,9 @@
  */
 
 const App = {
+    // --- App Version ---
+    version: '2.0.1', // App version
+
     // --- NEW: Admin credentials (replace with your actual admin user created in Supabase Auth) ---
     ADMIN_EMAIL: 'admin@lesims.com',
 
@@ -826,6 +829,41 @@ const App = {
         }
     },
 
+    /**
+     * Checks for service worker updates and prompts the user to reload.
+     */
+    checkForUpdates: function() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            const updateNotice = document.createElement('div');
+                            updateNotice.className = 'update-notification';
+                            updateNotice.innerHTML = `
+                                <div>Une nouvelle version est disponible !</div>
+                                <button id="update-button">Mettre à jour</button>
+                            `;
+                            document.body.appendChild(updateNotice);
+
+                            document.getElementById('update-button').addEventListener('click', () => {
+                                newWorker.postMessage({ action: 'skipWaiting' });
+                            });
+                        }
+                    });
+                });
+            });
+
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+    },
+
 }; // End of App Object
 
 
@@ -838,6 +876,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.updatePendingCountUI = App.updatePendingCountUI.bind(App);
 
         await App.init(); // Call the async init function
+
+        // --- NEW: Check for application updates ---
+        App.checkForUpdates();
 
     } catch (error) {
         console.error("Erreur fatale non interceptée lors de l'initialisation:", error);

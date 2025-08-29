@@ -12,7 +12,7 @@ const SUPABASE_URL = 'https://efdceibleelherxenduc.supabase.co'; // Get this fro
 const SYNC_TAG = 'database-sync'; // Tag for background sync
 
 // Nom et version des caches
-const CACHE_VERSION = 'v2'; // Increment version number when CACHE_FILES change
+const CACHE_VERSION = 'v3'; // Increment version number when CACHE_FILES change
 const STATIC_CACHE_NAME = `le-sims-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `le-sims-dynamic-${CACHE_VERSION}`; // Cache for API responses
 
